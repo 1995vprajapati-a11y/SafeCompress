@@ -1,0 +1,3 @@
+SafeCompress privacy notes
+
+This starter processes selected files locally in the browser and contains no upload endpoint, account system, analytics or ads. It loads JavaScript libraries from public CDNs. Review network traffic and self-host trusted libraries before making strong privacy claims or processing sensitive documents. See README.md for limitations.

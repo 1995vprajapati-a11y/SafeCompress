@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SafeCompress: privacy-first PDF and photo tools that process files locally in your browser.">
+<meta name="theme-color" content="#147a4b">
+<title>SafeCompress — Private PDF & Photo Tools</title>
+<style>
+:root{--green:#147a4b;--green2:#e6f5ec;--ink:#18231d;--muted:#64736a;--line:#dce7df;--bg:#f6faf7;--card:#fff;--orange:#f2a34a}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.wrap{max-width:1100px;margin:auto;padding:16px 20px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:850;font-size:1.35rem;color:var(--green)}.logo{width:42px;height:42px;background:var(--green2);border-radius:13px;display:grid;place-items:center;font-size:24px}
+button,select,input,textarea{font:inherit}button,.button{border:0;border-radius:10px;background:var(--green);color:#fff;padding:10px 14px;cursor:pointer;font-weight:700}button:hover{filter:brightness(.95)}button.secondary{background:#eef4f0;color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.45;cursor:not-allowed}
+.hero{text-align:center;padding:38px 20px 24px}.hero h1{font-size:clamp(2rem,5vw,3.1rem);line-height:1.1;margin:0 0 14px}.hero p{color:var(--muted);max-width:680px;margin:0 auto 18px}.privacy{display:inline-flex;align-items:center;gap:8px;background:var(--green2);color:#17633e;border:1px solid #c6e8d2;border-radius:99px;padding:8px 13px;font-size:.9rem;font-weight:700}
+main{max-width:1100px;margin:auto;padding:0 20px 48px}.notice{border:1px solid #c6e8d2;background:#f0fbf4;padding:14px 16px;border-radius:14px;margin:0 0 20px;font-size:.92rem}
+.layout{display:grid;grid-template-columns:250px 1fr;gap:18px}.sidebar,.panel,.toolcard{background:var(--card);border:1px solid var(--line);border-radius:16px}.sidebar{padding:12px;height:max-content}.navbtn{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);margin:3px 0;border:1px solid transparent}.navbtn.active{background:var(--green2);border-color:#c6e8d2;color:var(--green)}
+.panel{padding:22px;min-height:400px}.panel h2{margin:0 0 5px}.sub{color:var(--muted);margin:0 0 18px}.drop{border:2px dashed #b7cbbd;border-radius:16px;padding:28px 16px;text-align:center;background:#fbfefc}.drop strong{display:block;font-size:1.08rem}.drop p{color:var(--muted);margin:7px 0 15px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1;margin:10px 0}.field label{font-weight:700;font-size:.9rem}.field input,.field select,.field textarea{border:1px solid #cbd8ce;border-radius:9px;padding:10px;background:white;color:var(--ink);max-width:100%}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.toolcard{padding:15px;cursor:pointer;text-align:left;color:var(--ink);background:#fff}.toolcard:hover,.toolcard.selected{border-color:var(--green);box-shadow:0 0 0 2px #e0f3e7}.toolcard .emoji{font-size:1.5rem}.toolcard strong{display:block;margin:5px 0}.toolcard small{color:var(--muted)}.status{margin-top:14px;padding:11px 13px;border-radius:10px;background:#f0f4f1;color:#405046;white-space:pre-wrap;overflow-wrap:anywhere}.status.error{background:#fff0ed;color:#a12c1d}.status.ok{background:#e8f7ed;color:#17633e}.hidden{display:none!important}.filelist{margin-top:12px;font-size:.9rem;color:var(--muted)}.footer{text-align:center;color:var(--muted);font-size:.86rem;padding:24px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.navbtn{font-size:.9rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:16px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.wrap{padding:12px}.hero{padding-top:28px}}
+</style>
+</head>
+<body>
+<header><div class="wrap top">
+  <div class="brand"><div class="logo" aria-hidden="true">🛡️</div><span>SafeCompress</span></div>
+  <div class="row"><span id="privacyMini" style="color:var(--muted);font-size:.88rem">Files stay on your device</span><button class="secondary" id="langBtn" type="button">हिंदी</button></div>
+</div></header>
+<section class="hero">
+  <div class="privacy">🔒 <span id="privacyBadge">LOCAL PROCESSING · NO FILE UPLOADS</span></div>
+  <h1 id="heroTitle">Your files. Your device. Your privacy.</h1>
+  <p id="heroDesc">Compress, convert and organize PDFs and photos in your browser. Your selected files are not sent to our server.</p>
+</section>
+<main>
+  <div class="notice" id="privacyNotice"><strong>Privacy by design:</strong> file processing happens in this browser tab. This starter app does not include file-upload endpoints, accounts, analytics or advertising. Some processing libraries are loaded from a CDN; for a stricter production setup, host audited library files yourself.</div>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Tool categories">
+      <button class="navbtn active" data-cat="home" id="navHome">🏠 All tools</button>
+      <button class="navbtn" data-cat="pdf" id="navPdf">📄 PDF tools</button>
+      <button class="navbtn" data-cat="photo" id="navPhoto">🖼️ Photo tools</button>
+      <button class="navbtn" data-cat="scan" id="navScan">📷 Scan tools</button>
+      <button class="navbtn" data-cat="editor" id="navEditor">✍️ Manual editor</button>
+      <button class="navbtn" data-cat="privacy" id="navPrivacy">🔐 Privacy & help</button>
+    </aside>
+    <section class="panel">
+      <div id="homeView">
+        <h2 id="toolsTitle">Choose a tool</h2><p class="sub" id="toolsSub">Select a tool below to get started. Everything runs locally where supported.</p>
+        <div class="grid" id="toolGrid"></div>
+      </div>
+      <div id="workView" class="hidden">
+        <div class="row" style="justify-content:space-between"><div><h2 id="workTitle">Compress Photo</h2><p class="sub" id="workSub">Choose files and adjust settings.</p></div><button class="secondary" id="backBtn">← Back</button></div>
+        <div class="drop" id="dropZone"><strong id="dropTitle">Choose files</strong><p id="dropDesc">Or drag and drop them here. Files stay in this browser.</p><input type="file" id="fileInput" multiple></div>
+        <div id="fileList" class="filelist"></div>
+        <div id="options"></div>
+        <div class="row" style="margin-top:14px"><button id="runBtn" disabled>Process files</button><button id="clearBtn" class="secondary" type="button">Clear selection</button></div>
+        <div id="status" class="status" role="status" aria-live="polite">Ready.</div>
+      </div>
+      <div id="privacyView" class="hidden">
+        <h2 id="privacyTitle">Privacy & help</h2><p class="sub" id="privacyText">SafeCompress is designed to process files locally.</p>
+        <h3 id="whatLocalTitle">What “local processing” means</h3><p id="whatLocal">Your chosen file is read by this page and processed in browser memory. This starter code does not send the file to a SafeCompress server.</p>
+        <h3 id="limitsTitle">Important limitations</h3><p id="limitsText">Do not use this prototype for confidential documents until you have reviewed the source, tested network traffic and hosted trusted dependencies yourself. A website cannot guarantee privacy solely by using privacy wording.</p>
+        <h3 id="contactTitle">Support</h3><p id="contactText">Add a real contact method before publishing. Do not publish a fake address or claim certifications you do not have.</p>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="footer">SafeCompress · Privacy-first PDF & Photo Tools · <span id="footerText">Local processing prototype</span><div style="margin-top:8px;font-weight:700;color:var(--green)">Designed &amp; Developed by Vinod Prajapati</div></div>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const { PDFDocument, StandardFonts, rgb } = PDFLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let lang='en', category='home', selectedTool=null, chosenFiles=[];
+const tools = [
+ {id:'compressPdf',cat:'pdf',icon:'🗜️',en:'Compress PDF',hi:'PDF का आकार कम करें',descEn:'Reduce PDF size by rebuilding pages as images.',descHi:'पेजों को इमेज के रूप में दोबारा बनाकर आकार घटाएँ।',accept:'.pdf',multiple:false},
+ {id:'mergePdf',cat:'pdf',icon:'🧩',en:'Merge PDF',hi:'PDF जोड़ें',descEn:'Combine multiple PDFs into one.',descHi:'कई PDF को एक फाइल में जोड़ें।',accept:'.pdf',multiple:true},
+ {id:'splitPdf',cat:'pdf',icon:'✂️',en:'Split / Extract Pages',hi:'PDF पेज अलग करें',descEn:'Export selected page ranges.',descHi:'चुने हुए पेज अलग PDF में निकालें।',accept:'.pdf',multiple:false},
+ {id:'rotatePdf',cat:'pdf',icon:'🔄',en:'Rotate PDF',hi:'PDF घुमाएँ',descEn:'Rotate all pages by 90, 180 or 270 degrees.',descHi:'सभी पेज 90, 180 या 270 डिग्री घुमाएँ।',accept:'.pdf',multiple:false},
+ {id:'deletePages',cat:'pdf',icon:'🗑️',en:'Delete PDF Pages',hi:'PDF पेज हटाएँ',descEn:'Remove selected pages by page number.',descHi:'पेज नंबर के आधार पर पेज हटाएँ।',accept:'.pdf',multiple:false},
+ {id:'pdfToImages',cat:'pdf',icon:'🖼️',en:'PDF to JPG / PNG',hi:'PDF से JPG / PNG',descEn:'Render each PDF page as an image download.',descHi:'हर PDF पेज को इमेज के रूप में डाउनलोड करें।',accept:'.pdf',multiple:false},
+ {id:'pageNumbers',cat:'pdf',icon:'🔢',en:'Add Page Numbers',hi:'पेज नंबर जोड़ें',descEn:'Stamp page numbers onto pages.',descHi:'PDF पेजों पर नंबर लगाएँ।',accept:'.pdf',multiple:false},
+ {id:'watermark',cat:'pdf',icon:'💧',en:'Add Watermark',hi:'वॉटरमार्क जोड़ें',descEn:'Stamp text onto every page.',descHi:'हर पेज पर टेक्स्ट वॉटरमार्क लगाएँ।',accept:'.pdf',multiple:false},
+ {id:'imageToPdf',cat:'photo',icon:'📑',en:'Photo to PDF',hi:'फोटो से PDF',descEn:'Turn one or more images into a PDF.',descHi:'एक या अधिक फोटो को PDF बनाएँ।',accept:'image/*',multiple:true},
+ {id:'compressPhoto',cat:'photo',icon:'📉',en:'Compress Photo',hi:'फोटो का आकार कम करें',descEn:'Choose output type, quality and dimensions.',descHi:'फॉर्मेट, गुणवत्ता और आकार चुनें।',accept:'image/*',multiple:true},
+ {id:'resizePhoto',cat:'photo',icon:'↔️',en:'Resize Photo',hi:'फोटो का आकार बदलें',descEn:'Set output width and height.',descHi:'आउटपुट की चौड़ाई और ऊँचाई चुनें।',accept:'image/*',multiple:true},
+ {id:'convertImage',cat:'photo',icon:'🔁',en:'Convert JPG / PNG / WebP',hi:'JPG / PNG / WebP बदलें',descEn:'Convert browser-supported image formats.',descHi:'ब्राउज़र द्वारा समर्थित इमेज फॉर्मेट बदलें।',accept:'image/*',multiple:true},
+ {id:'cropPhoto',cat:'photo',icon:'✂️',en:'Crop Photo',hi:'फोटो क्रॉप करें',descEn:'Crop from the center using width and height.',descHi:'चौड़ाई और ऊँचाई से बीच से क्रॉप करें।',accept:'image/*',multiple:false},
+ {id:'scanBw',cat:'scan',icon:'📷',en:'Black & White Scan',hi:'ब्लैक एंड व्हाइट स्कैन',descEn:'Create a high-contrast grayscale image.',descHi:'काले-सफेद स्कैन जैसी इमेज बनाएँ।',accept:'image/*',multiple:true},
+ {id:'addTextPdf',cat:'editor',icon:'✍️',en:'Add Text to PDF',hi:'PDF पर टेक्स्ट लिखें',descEn:'Place a text note on each page.',descHi:'हर पेज पर टेक्स्ट नोट लगाएँ।',accept:'.pdf',multiple:false},
+ {id:'protectPdf',cat:'pdf',icon:'🔐',en:'Protect PDF (planned)',hi:'PDF पासवर्ड (आगे जोड़ेंगे)',descEn:'Password encryption is not included in this starter.',descHi:'इस शुरुआती कोड में पासवर्ड एन्क्रिप्शन शामिल नहीं है।',accept:'.pdf',multiple:false},
+ {id:'scanCleanup',cat:'scan',icon:'🧼',en:'Scan Cleanup (basic)',hi:'स्कैन साफ करें (बेसिक)',descEn:'Grayscale and resize tools can help clean scans.',descHi:'ग्रेस्केल और रिसाइज़ से स्कैन बेहतर करें।',accept:'image/*',multiple:true}
+];
+const text = {
+ en:{privacyMini:'Files stay on your device',badge:'LOCAL PROCESSING · NO FILE UPLOADS',heroTitle:'Your files. Your device. Your privacy.',heroDesc:'Compress, convert and organize PDFs and photos in your browser. Your selected files are not sent to our server.',notice:'<strong>Privacy by design:</strong> file processing happens in this browser tab. This starter app does not include file-upload endpoints, accounts, analytics or advertising. Some processing libraries are loaded from a CDN; for a stricter production setup, host audited library files yourself.',all:'🏠 All tools',pdf:'📄 PDF tools',photo:'🖼️ Photo tools',scan:'📷 Scan tools',editor:'✍️ Manual editor',privacy:'🔐 Privacy & help',toolsTitle:'Choose a tool',toolsSub:'Select a tool below to get started. Everything runs locally where supported.',choose:'Choose files',drop:'Or drag and drop them here. Files stay in this browser.',run:'Process files',clear:'Clear selection',back:'← Back',ready:'Ready.',privacyTitle:'Privacy & help',privacyText:'SafeCompress is designed to process files locally.',whatLocalTitle:'What “local processing” means',whatLocal:'Your chosen file is read by this page and processed in browser memory. This starter code does not send the file to a SafeCompress server.',limitsTitle:'Important limitations',limitsText:'Do not use this prototype for confidential documents until you have reviewed the source, tested network traffic and hosted trusted dependencies yourself. A website cannot guarantee privacy solely by using privacy wording.',contactTitle:'Support',contactText:'Add a real contact method before publishing. Do not publish a fake address or claim certifications you do not have.',footer:'Local processing prototype',processing:'Processing locally…',done:'Done. Download your result below.',needFile:'Please choose at least one file.',unsupported:'This tool is not implemented in this starter yet. No file was uploaded.',err:'Could not process this file: ',download:'Download',options:'Options',quality:'Quality (0.1–1)',width:'Width (px; 0 = original)',height:'Height (px; 0 = original)',format:'Output format',range:'Page numbers / ranges (e.g. 1-3,5)',rotation:'Rotation',text:'Text to add',watermark:'Watermark text',scale:'PDF render scale',qualityNote:'Lower quality or dimensions usually reduce file size. Results depend on the source file.',filesSelected:'file(s) selected',invalidRange:'Page range is invalid or removes every page.',rendering:'Rendering pages locally…',noPdf:'PDF library is unavailable. Check your internet connection or CDN settings.',pageCount:'PDF pages',page:'Page',original:'Original size',output:'Output size',reduction:'Size change',notSmaller:'Output may be larger than the original, depending on the content.'},
+ hi:{privacyMini:'फाइलें आपके डिवाइस पर रहती हैं',badge:'लोकल प्रोसेसिंग · फाइल अपलोड नहीं',heroTitle:'आपकी फाइलें। आपका डिवाइस। आपकी प्राइवेसी।',heroDesc:'ब्राउज़र में PDF और फोटो Compress, Convert और व्यवस्थित करें। चुनी हुई फाइल हमारे सर्वर पर नहीं भेजी जाती।',notice:'<strong>प्राइवेसी पहले:</strong> फाइल प्रोसेसिंग इसी ब्राउज़र टैब में होती है। इस शुरुआती ऐप में फाइल-अपलोड सर्वर, अकाउंट, एनालिटिक्स या विज्ञापन शामिल नहीं हैं। कुछ लाइब्रेरी CDN से लोड होती हैं; अधिक सख्त प्रोडक्शन सेटअप में जाँची हुई लाइब्रेरी खुद होस्ट करें।',all:'🏠 सभी टूल',pdf:'📄 PDF टूल',photo:'🖼️ फोटो टूल',scan:'📷 स्कैन टूल',editor:'✍️ मैनुअल एडिटर',privacy:'🔐 प्राइवेसी व मदद',toolsTitle:'टूल चुनें',toolsSub:'शुरू करने के लिए टूल चुनें। जहाँ संभव है, प्रोसेसिंग डिवाइस पर होती है।',choose:'फाइल चुनें',drop:'या फाइल यहाँ खींचकर छोड़ें। फाइलें इसी ब्राउज़र में रहेंगी।',run:'फाइल प्रोसेस करें',clear:'चयन हटाएँ',back:'← वापस',ready:'तैयार।',privacyTitle:'प्राइवेसी व मदद',privacyText:'SafeCompress फाइलों को स्थानीय रूप से प्रोसेस करने के लिए बनाया गया है।',whatLocalTitle:'लोकल प्रोसेसिंग का अर्थ',whatLocal:'इस पेज द्वारा चुनी गई फाइल ब्राउज़र मेमोरी में प्रोसेस होती है। यह शुरुआती कोड फाइल SafeCompress सर्वर पर नहीं भेजता।',limitsTitle:'जरूरी सीमाएँ',limitsText:'गोपनीय दस्तावेज़ों के लिए इस प्रोटोटाइप का उपयोग करने से पहले सोर्स कोड देखें, नेटवर्क ट्रैफिक जाँचें और विश्वसनीय लाइब्रेरी खुद होस्ट करें। केवल प्राइवेसी का दावा करने से सुरक्षा साबित नहीं होती।',contactTitle:'सहायता',contactText:'प्रकाशित करने से पहले असली संपर्क तरीका जोड़ें। नकली पता या अप्रमाणित प्रमाणपत्र का दावा न करें।',footer:'लोकल प्रोसेसिंग प्रोटोटाइप',processing:'डिवाइस पर प्रोसेस हो रहा है…',done:'पूरा हुआ। नीचे से फाइल डाउनलोड करें।',needFile:'कृपया कम से कम एक फाइल चुनें।',unsupported:'यह टूल अभी इस शुरुआती संस्करण में तैयार नहीं है। कोई फाइल अपलोड नहीं हुई।',err:'फाइल प्रोसेस नहीं हो सकी: ',download:'डाउनलोड',options:'विकल्प',quality:'गुणवत्ता (0.1–1)',width:'चौड़ाई (px; 0 = मूल)',height:'ऊँचाई (px; 0 = मूल)',format:'आउटपुट फॉर्मेट',range:'पेज नंबर / रेंज (जैसे 1-3,5)',rotation:'घुमाव',text:'जोड़ने वाला टेक्स्ट',watermark:'वॉटरमार्क टेक्स्ट',scale:'PDF रेंडर स्केल',qualityNote:'कम गुणवत्ता या छोटे आयाम से फाइल छोटी हो सकती है। परिणाम मूल फाइल पर निर्भर है।',filesSelected:'फाइलें चुनी गईं',invalidRange:'पेज रेंज गलत है या सभी पेज हट रहे हैं।',rendering:'पेज डिवाइस पर प्रोसेस हो रहे हैं…',noPdf:'PDF लाइब्रेरी उपलब्ध नहीं है। इंटरनेट या CDN सेटिंग जाँचें।',pageCount:'PDF पेज',page:'पेज',original:'मूल आकार',output:'आउटपुट आकार',reduction:'आकार में बदलाव',notSmaller:'कंटेंट के अनुसार आउटपुट मूल से बड़ा भी हो सकता है.'}
+};
+function tr(k){return text[lang][k]||k}
+function tname(t){return lang==='hi'?t.hi:t.en}
+function renderTools(){
+ const grid=$('toolGrid');grid.innerHTML='';
+ let arr=tools.filter(t=>category==='home'||t.cat===category);
+ if(category==='privacy'){ $('homeView').classList.add('hidden');$('workView').classList.add('hidden');$('privacyView').classList.remove('hidden');return;}
+ $('privacyView').classList.add('hidden');
+ arr.forEach(t=>{const b=document.createElement('button');b.className='toolcard';b.innerHTML=`<span class="emoji">${t.icon}</span><strong>${tname(t)}</strong><small>${lang==='hi'?t.descHi:t.descEn}</small>`;b.onclick=()=>openTool(t);grid.appendChild(b)});
+ $('homeView').classList.remove('hidden');$('workView').classList.add('hidden');
+}
+function applyLang(){
+ document.documentElement.lang=lang==='hi'?'hi':'en';$('langBtn').textContent=lang==='hi'?'English':'हिंदी';
+ const map={privacyMini:'privacyMini',privacyBadge:'badge',heroTitle:'heroTitle',heroDesc:'heroDesc',navHome:'all',navPdf:'pdf',navPhoto:'photo',navScan:'scan',navEditor:'editor',navPrivacy:'privacy',toolsTitle:'toolsTitle',toolsSub:'toolsSub',dropTitle:'choose',dropDesc:'drop',runBtn:'run',clearBtn:'clear',backBtn:'back',privacyTitle:'privacyTitle',privacyText:'privacyText',whatLocalTitle:'whatLocalTitle',whatLocal:'whatLocal',limitsTitle:'limitsTitle',limitsText:'limitsText',contactTitle:'contactTitle',contactText:'contactText',footerText:'footer'};
+ Object.entries(map).forEach(([id,key])=>{const el=$(id);if(el){if(id==='privacyBadge'||id==='privacyMini'||id==='heroTitle'||id==='heroDesc'||id==='whatLocal'||id==='limitsText'||id==='contactText')el.textContent=tr(key);else el.innerHTML=tr(key)}});
+ $('privacyNotice').innerHTML=tr('notice');$('status').textContent=tr('ready');renderTools();
+ if(selectedTool)openTool(selectedTool);
+}
+function openTool(t){selectedTool=t;chosenFiles=[];$('fileInput').value='';$('fileInput').accept=t.accept;$('fileInput').multiple=t.multiple;$('workTitle').textContent=tname(t);$('workSub').textContent=lang==='hi'?t.descHi:t.descEn;$('homeView').classList.add('hidden');$('privacyView').classList.add('hidden');$('workView').classList.remove('hidden');$('fileList').textContent='';$('options').innerHTML='';$('status').className='status';$('status').textContent=tr('ready');$('runBtn').disabled=true;
+ if(t.id==='protectPdf'){$('runBtn').disabled=true;$('status').textContent=tr('unsupported');}
+ buildOptions(t); }
+function field(id,label,type='text',value='',extra={}){const d=document.createElement('div');d.className='field';const l=document.createElement('label');l.htmlFor=id;l.textContent=label;const i=document.createElement('input');i.id=id;i.type=type;i.value=value;Object.entries(extra).forEach(([k,v])=>i.setAttribute(k,v));d.append(l,i);return d}
+function buildOptions(t){const o=$('options');o.innerHTML='';const add=(id,label,type,val,extra)=>o.appendChild(field(id,label,type,val,extra));
+ if(['compressPhoto','resizePhoto','convertImage','cropPhoto','scanBw'].includes(t.id)){add('quality',tr('quality'),'number','0.75',{min:'0.1',max:'1',step:'0.05'});add('width',tr('width'),'number','0',{min:'0'});add('height',tr('height'),'number','0',{min:'0'});const d=document.createElement('div');d.className='field';d.innerHTML=`<label for="format">${tr('format')}</label><select id="format"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select>`;o.appendChild(d);}
+ if(['splitPdf','deletePages'].includes(t.id))add('range',tr('range'),'text','1-1');
+ if(t.id==='rotatePdf'){const d=document.createElement('div');d.className='field';d.innerHTML=`<label for="rotation">${tr('rotation')}</label><select id="rotation"><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>`;o.appendChild(d);}
+ if(['watermark','addTextPdf'].includes(t.id))add('text',t.id==='watermark'?tr('watermark'):tr('text'),'text',t.id==='watermark'?'SafeCompress':'');
+ if(t.id==='compressPdf'||t.id==='pdfToImages')add('scale',tr('scale'),'number','1.5',{min:'0.5',max:'3',step:'0.25'});
+ if(['compressPhoto','resizePhoto','convertImage','cropPhoto','scanBw'].includes(t.id)){const p=document.createElement('p');p.className='sub';p.textContent=tr('qualityNote');o.appendChild(p);}
+}
+$('fileInput').addEventListener('change',e=>setFiles([...e.target.files]));
+function setFiles(files){chosenFiles=files;$('fileList').textContent=files.length?`${files.length} ${tr('filesSelected')}: `+files.map(f=>`${f.name} (${formatBytes(f.size)})`).join(', '):'';$('runBtn').disabled=!files.length||selectedTool?.id==='protectPdf';}
+function formatBytes(n){if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(2)+' MB'}
+const dz=$('dropZone');dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='#eefaf2'});dz.addEventListener('dragleave',()=>dz.style.background='');dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';setFiles([...e.dataTransfer.files])});
+$('clearBtn').onclick=()=>{chosenFiles=[];$('fileInput').value='';$('fileList').textContent='';$('runBtn').disabled=true;$('status').textContent=tr('ready');};
+$('backBtn').onclick=()=>{selectedTool=null;renderTools();};
+document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{category=b.dataset.cat;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x===b));selectedTool=null;renderTools();});
+$('langBtn').onclick=()=>{lang=lang==='en'?'hi':'en';applyLang()};
+function status(msg,kind=''){ $('status').className='status '+kind;$('status').textContent=msg;}
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function baseName(name){return name.replace(/\.[^.]+$/,'').replace(/[^\w\-]+/g,'_').slice(0,80)||'file'}
+function parseRanges(s,max){const set=new Set();for(const part of s.split(',').map(x=>x.trim()).filter(Boolean)){const m=part.match(/^(\d+)\s*-\s*(\d+)$/);if(m){let a=+m[1],b=+m[2];if(a<1||b<a||b>max)throw Error(tr('invalidRange'));for(let n=a;n<=b;n++)set.add(n-1)}else if(/^\d+$/.test(part)){let n=+part;if(n<1||n>max)throw Error(tr('invalidRange'));set.add(n-1)}else throw Error(tr('invalidRange'))}return [...set].sort((a,b)=>a-b)}
+async function loadPdf(file){return PDFDocument.load(await file.arrayBuffer());}
+async function processImage(file,t){const bmp=await createImageBitmap(file);let w=Number($('width')?.value||0)||bmp.width,h=Number($('height')?.value||0)||bmp.height;
+ if(t.id==='cropPhoto'){w=Math.min(w,bmp.width);h=Math.min(h,bmp.height);const sx=Math.max(0,(bmp.width-w)/2),sy=Math.max(0,(bmp.height-h)/2);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(bmp,sx,sy,w,h,0,0,w,h);return canvasOutput(c,file,t)}
+ if($('width')?.value==='0'&&$('height')?.value==='0'){w=bmp.width;h=bmp.height}else if($('width')?.value==='0'){w=Math.round(bmp.width*(h/bmp.height))}else if($('height')?.value==='0'){h=Math.round(bmp.height*(w/bmp.width))}
+ const c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);const ctx=c.getContext('2d');ctx.drawImage(bmp,0,0,c.width,c.height);
+ if(t.id==='scanBw'){const im=ctx.getImageData(0,0,c.width,c.height);for(let i=0;i<im.data.length;i+=4){const g=.299*im.data[i]+.587*im.data[i+1]+.114*im.data[i+2];const v=g>160?255:0;im.data[i]=im.data[i+1]=im.data[i+2]=v;}ctx.putImageData(im,0,0);}
+ bmp.close();return canvasOutput(c,file,t)}
+function canvasOutput(c,file,t){const fmt=$('format')?.value||'image/jpeg';const q=Math.max(.1,Math.min(1,Number($('quality')?.value||.75)));return new Promise(resolve=>c.toBlob(blob=>resolve({blob,name:baseName(file.name)+(t.id==='cropPhoto'?'_crop':'_optimized')+'.'+(fmt==='image/png'?'png':fmt==='image/webp'?'webp':'jpg')}),fmt,q))}
+async function imageToPdf(files){const pdf=await PDFDocument.create();for(const f of files){const bytes=await f.arrayBuffer();let img;const type=f.type.toLowerCase();if(type.includes('png'))img=await pdf.embedPng(bytes);else if(type.includes('jpeg')||type.includes('jpg'))img=await pdf.embedJpg(bytes);else {const bmp=await createImageBitmap(f);const c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;c.getContext('2d').drawImage(bmp,0,0);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.9));img=await pdf.embedJpg(await blob.arrayBuffer());bmp.close();}
+ const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}return new Blob([await pdf.save()],{type:'application/pdf'});}
+async function pdfToImages(file){const data=new Uint8Array(await file.arrayBuffer());const doc=await pdfjsLib.getDocument({data}).promise;const scale=Number($('scale')?.value||1.5);for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/png'));downloadBlob(blob,`${baseName(file.name)}_page_${n}.png`);}return null;}
+async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');return}if(selectedTool.id==='protectPdf'){status(tr('unsupported'),'error');return}
+ $('runBtn').disabled=true;status(tr('processing'));
+ try{const t=selectedTool;let out=[];
+ if(['compressPhoto','resizePhoto','convertImage','cropPhoto','scanBw'].includes(t.id)){for(const f of chosenFiles){const r=await processImage(f,t);if(r?.blob)out.push(r)}}
+ else if(t.id==='imageToPdf'){out.push({blob:await imageToPdf(chosenFiles),name:'safecompress_images.pdf'})}
+ else if(t.id==='mergePdf'){if(chosenFiles.length<2)throw Error(lang==='hi'?'Merge के लिए कम से कम 2 PDF चुनें।':'Choose at least 2 PDFs to merge.');const merged=await PDFDocument.create();for(const f of chosenFiles){const src=await loadPdf(f);const pages=await merged.copyPages(src,src.getPageIndices());pages.forEach(p=>merged.addPage(p));}out.push({blob:new Blob([await merged.save()],{type:'application/pdf'}),name:'safecompress_merged.pdf'})}
+ else if(t.id==='compressPdf'){const f=chosenFiles[0];const data=new Uint8Array(await f.arrayBuffer());const doc=await pdfjsLib.getDocument({data}).promise;const scale=Number($('scale')?.value||1.5);const pdf=await PDFDocument.create();for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const jpg=await new Promise(r=>c.toBlob(r,'image/jpeg',Math.max(.35,Number($('quality')?.value||.72))));const img=await pdf.embedJpg(await jpg.arrayBuffer());const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}out.push({blob:new Blob([await pdf.save()],{type:'application/pdf'}),name:baseName(f.name)+'_compressed.pdf'});}
+ else if(t.id==='splitPdf'||t.id==='deletePages'){const f=chosenFiles[0],src=await loadPdf(f),max=src.getPageCount(),idx=parseRanges($('range').value,max);let keep;if(t.id==='splitPdf')keep=idx;else {const rem=new Set(idx);keep=src.getPageIndices().filter(i=>!rem.has(i));if(!keep.length)throw Error(tr('invalidRange'));}const dest=await PDFDocument.create();const pages=await dest.copyPages(src,keep);pages.forEach(p=>dest.addPage(p));out.push({blob:new Blob([await dest.save()],{type:'application/pdf'}),name:baseName(f.name)+(t.id==='splitPdf'?'_extracted':'_pages_removed')+'.pdf'});}
+ else if(t.id==='rotatePdf'){const src=await loadPdf(chosenFiles[0]);const deg=Number($('rotation').value);src.getPages().forEach(p=>p.setRotation({type:'degrees',angle:((p.getRotation().angle+deg)%360)}));out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+'_rotated.pdf'});}
+ else if(['pageNumbers','watermark','addTextPdf'].includes(t.id)){const src=await loadPdf(chosenFiles[0]);const font=await src.embedFont(StandardFonts.Helvetica);const msg=$('text')?.value||'SafeCompress';src.getPages().forEach((p,i)=>{const {width,height}=p.getSize();if(t.id==='pageNumbers')p.drawText(String(i+1),{x:width-45,y:18,size:10,font,color:rgb(.25,.25,.25)});else p.drawText(msg,{x:30,y:t.id==='watermark'?height/2:height-40,size:t.id==='watermark'?22:12,font,color:rgb(.45,.45,.45),opacity:t.id==='watermark'?.3:1,rotate:t.id==='watermark'?{type:'degrees',angle:35}:undefined});});out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+'_edited.pdf'});}
+ else if(t.id==='pdfToImages'){await pdfToImages(chosenFiles[0]);status(tr('done'),'ok');return}
+ else if(t.id==='protectPdf'){status(tr('unsupported'),'error');return}
+ else throw Error(tr('unsupported'));
+ if(!out.length){status(tr('done'),'ok');return}
+ out.forEach(r=>{if(r?.blob)downloadBlob(r.blob,r.name)});
+ status(tr('done')+' '+out.map(r=>r.name+' ('+formatBytes(r.blob.size)+')').join(', '),'ok');
+ }catch(e){console.error(e);status(tr('err')+(e.message||String(e)),'error')}
+ finally{$('runBtn').disabled=!chosenFiles.length}
+}
+$('runBtn').onclick=runTool;
+renderTools();applyLang();
+})();
+</script>
+</body>
+</html>
