@@ -69,9 +69,9 @@ main{max-width:1100px;margin:auto;padding:0 20px 48px}.notice{border:1px solid #
         <div id="status" class="status" role="status" aria-live="polite">Ready.</div>
         <section id="watermarkPreview" class="hidden" style="margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfefc">
           <h3 id="wmPreviewTitle" style="margin:0 0 8px">Preview before download</h3>
-          <p id="wmPreviewNote" class="sub" style="margin-bottom:12px">Review the edited page carefully. This method covers the chosen area with a solid white rectangle; it does not remove underlying watermark objects.</p>
-          <canvas id="wmPreviewCanvas" style="display:block;width:100%;max-width:760px;height:auto;border:1px solid var(--line);background:#fff;border-radius:8px"></canvas>
-          <div class="row" style="margin-top:12px"><button id="wmDownloadBtn" type="button">Download previewed PDF</button><button id="wmCancelBtn" type="button" class="secondary">Cancel preview</button></div>
+          <p id="wmPreviewNote" class="sub" style="margin-bottom:12px">First select the watermark area by dragging on the original page. This tool covers the selected area; it cannot erase a watermark object without covering it.</p>
+          <canvas id="wmPreviewCanvas" style="display:block;width:100%;max-width:760px;height:auto;border:1px solid var(--line);background:#fff;border-radius:8px;touch-action:none;cursor:crosshair"></canvas>
+          <div class="row" style="margin-top:12px"><button id="wmApplyBtn" type="button" disabled>Apply white cover & preview</button><button id="wmDownloadBtn" type="button" disabled>Download previewed PDF</button><button id="wmCancelBtn" type="button" class="secondary">Cancel</button></div>
         </section>
       </div>
       <div id="privacyView" class="hidden">
@@ -92,7 +92,7 @@ main{max-width:1100px;margin:auto;padding:0 20px 48px}.notice{border:1px solid #
 const $ = id => document.getElementById(id);
 const { PDFDocument, StandardFonts, rgb } = window.PDFLib || {}; 
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-let lang='hi', category='home', selectedTool=null, chosenFiles=[], pendingWatermarkPdf=null, pendingWatermarkName='';
+let lang='hi', category='home', selectedTool=null, chosenFiles=[], pendingWatermarkPdf=null, pendingWatermarkName='', wmSelectionState=null;
 const tools = [
  {id:'compressPdf',cat:'pdf',icon:'🗜️',en:'Compress PDF',hi:'PDF Compress करें',descEn:'Reduce PDF file size.',descHi:'PDF का साइज़ कम करें।',accept:'.pdf',multiple:false},
  {id:'compressPhoto',cat:'photo',icon:'📉',en:'Compress Photo',hi:'Photo Compress करें',descEn:'Reduce photo file size.',descHi:'फोटो का साइज़ कम करें।',accept:'image/*',multiple:true},
@@ -110,7 +110,8 @@ const tools = [
  {id:'cropPhoto',cat:'photo',icon:'✂️',en:'Crop Photo',hi:'फोटो क्रॉप करें',descEn:'Crop from the center using width and height.',descHi:'चौड़ाई और ऊँचाई से बीच से क्रॉप करें।',accept:'image/*',multiple:false},
  {id:'scanBw',cat:'scan',icon:'📷',en:'Black & White Scan',hi:'ब्लैक एंड व्हाइट स्कैन',descEn:'Create a high-contrast grayscale image.',descHi:'काले-सफेद स्कैन जैसी इमेज बनाएँ।',accept:'image/*',multiple:true},
  {id:'addTextPdf',cat:'editor',icon:'✍️',en:'Add Text to PDF',hi:'PDF पर टेक्स्ट लिखें',descEn:'Place a text note on each page.',descHi:'हर पेज पर टेक्स्ट नोट लगाएँ।',accept:'.pdf',multiple:false},
- {id:'scanCleanup',cat:'scan',icon:'🧼',en:'Scan Cleanup (basic)',hi:'स्कैन साफ करें (बेसिक)',descEn:'Enhance contrast, convert to grayscale or black and white.',descHi:'कॉन्ट्रास्ट सुधारें, ग्रेस्केल या ब्लैक एंड व्हाइट करें।',accept:'image/*',multiple:true}
+ {id:'scanCleanup',cat:'scan',icon:'🧼',en:'Scan Cleanup (basic)',hi:'स्कैन साफ करें (बेसिक)',descEn:'Enhance contrast, convert to grayscale or black and white.',descHi:'कॉन्ट्रास्ट सुधारें, ग्रेस्केल या ब्लैक एंड व्हाइट करें।',accept:'image/*',multiple:true},
+ {id:'protectPdf',cat:'pdf',icon:'🔐',en:'Protect PDF with Password',hi:'PDF पर पासवर्ड लगाएँ',descEn:'Password-protect a PDF.',descHi:'PDF को पासवर्ड से सुरक्षित करें।',accept:'.pdf',multiple:false},
 ];
 const text = {
  en:{privacyMini:'Files stay on your device',badge:'LOCAL PROCESSING · NO FILE UPLOADS',heroTitle:'Compress PDF, Compress Photo और Photo से PDF',heroDesc:'PDF और फोटो का साइज़ कम करें, कई फोटो से स्कैन जैसी PDF बनाएँ। जहाँ समर्थित हो, फाइलें आपके डिवाइस पर प्रोसेस होती हैं।',notice:'<strong>Privacy by design:</strong> file processing happens in this browser tab. This starter app does not include file-upload endpoints, accounts, analytics or advertising. Some processing libraries are loaded from a CDN; for a stricter production setup, host audited library files yourself.',all:'🏠 All tools',pdf:'📄 PDF tools',photo:'🖼️ Photo tools',scan:'📷 Scan tools',editor:'✍️ Manual editor',privacy:'🔐 Privacy & help',toolsTitle:'Choose a tool',toolsSub:'Select a tool below to get started. Everything runs locally where supported.',choose:'Choose files',drop:'Or drag and drop them here. Files stay in this browser.',run:'Process files',clear:'Clear selection',back:'← Back',ready:'Ready.',privacyTitle:'Privacy & help',privacyText:'SafeCompress is designed to process files locally.',whatLocalTitle:'What “local processing” means',whatLocal:'Your chosen file is read by this page and processed in browser memory. This starter code does not send the file to a SafeCompress server.',limitsTitle:'Important limitations',limitsText:'Do not use this prototype for confidential documents until you have reviewed the source, tested network traffic and hosted trusted dependencies yourself. A website cannot guarantee privacy solely by using privacy wording.',contactTitle:'Support',contactText:'Add a real contact method before publishing. Do not publish a fake address or claim certifications you do not have.',footer:'Local processing prototype',processing:'Processing locally…',done:'Done. Download your result below.',needFile:'Please choose at least one file.',unsupported:'This tool is not implemented in this starter yet. No file was uploaded.',err:'Could not process this file: ',download:'Download',options:'Options',quality:'Quality (0.1–1)',width:'Width (px; 0 = original)',height:'Height (px; 0 = original)',format:'Output format',range:'Page numbers / ranges (e.g. 1-3,5)',rotation:'Rotation',text:'Text to add',watermark:'Watermark text',scale:'PDF render scale',qualityNote:'Lower quality or dimensions usually reduce file size. Results depend on the source file.',filesSelected:'file(s) selected',invalidRange:'Page range is invalid or removes every page.',rendering:'Rendering pages locally…',noPdf:'PDF library is unavailable. Check your internet connection or CDN settings.',pageCount:'PDF pages',page:'Page',original:'Original size',output:'Output size',reduction:'Size change',notSmaller:'Output may be larger than the original, depending on the content.'},
@@ -137,10 +138,11 @@ function applyLang(){
  $('privacyNotice').innerHTML=tr('notice');$('status').textContent=tr('ready');renderTools();
  if(selectedTool){const keepFiles=[...chosenFiles];const keepTool=selectedTool;openTool(keepTool);if(keepFiles.length){chosenFiles=keepFiles;$('fileList').textContent=keepFiles.length?`${keepFiles.length} ${tr('filesSelected')}: `+keepFiles.map(f=>`${f.name} (${formatBytes(f.size)})`).join(', '):'';$('runBtn').disabled=false;const sr=$('sizeResults');if(sr)sr.textContent=(lang==='hi'?'मौजूदा साइज़: ':'Current size: ')+keepFiles.map(f=>`${f.name}: ${formatBytes(f.size)}`).join(' | ');}}
 }
-function openTool(t){selectedTool=t;pendingWatermarkPdf=null;pendingWatermarkName='';$('watermarkPreview')?.classList.add('hidden');chosenFiles=[];$('fileInput').value='';$('mergeFile1').value='';$('mergeFile2').value='';$('fileInput').accept=t.accept;$('fileInput').multiple=t.multiple;$('dropZone').classList.toggle('hidden',t.id==='mergePdf');$('mergeUploadBox').classList.toggle('hidden',t.id!=='mergePdf');$('workTitle').textContent=tname(t);$('workSub').textContent=lang==='hi'?t.descHi:t.descEn;$('homeView').classList.add('hidden');$('privacyView').classList.add('hidden');$('workView').classList.remove('hidden');$('fileList').textContent='';$('options').innerHTML='';$('status').className='status';$('status').textContent=tr('ready');$('runBtn').disabled=true;
+function openTool(t){selectedTool=t;pendingWatermarkPdf=null;pendingWatermarkName='';wmSelectionState=null;$('watermarkPreview')?.classList.add('hidden');$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;chosenFiles=[];$('fileInput').value='';$('mergeFile1').value='';$('mergeFile2').value='';$('fileInput').accept=t.accept;$('fileInput').multiple=t.multiple;$('dropZone').classList.toggle('hidden',t.id==='mergePdf');$('mergeUploadBox').classList.toggle('hidden',t.id!=='mergePdf');$('workTitle').textContent=tname(t);$('workSub').textContent=lang==='hi'?t.descHi:t.descEn;$('homeView').classList.add('hidden');$('privacyView').classList.add('hidden');$('workView').classList.remove('hidden');$('fileList').textContent='';$('options').innerHTML='';$('status').className='status';$('status').textContent=tr('ready');$('runBtn').disabled=true;
  buildOptions(t); }
 function field(id,label,type='text',value='',extra={}){const d=document.createElement('div');d.className='field';const l=document.createElement('label');l.htmlFor=id;l.textContent=label;const i=document.createElement('input');i.id=id;i.type=type;i.value=value;Object.entries(extra).forEach(([k,v])=>i.setAttribute(k,v));d.append(l,i);return d}
 function buildOptions(t){const o=$('options');o.innerHTML='';const add=(id,label,type,val,extra)=>o.appendChild(field(id,label,type,val,extra));
+ if(t.id==='protectPdf'){add('protectPassword',lang==='hi'?'पासवर्ड':'Password','password','',{required:'required',minlength:'6'});add('protectPasswordConfirm',lang==='hi'?'पासवर्ड की पुष्टि करें':'Confirm password','password','',{required:'required',minlength:'6'});const note=document.createElement('div');note.className='notice';note.textContent=lang==='hi'?'पासवर्ड एन्क्रिप्शन इंजन जोड़ना आवश्यक है। सुरक्षा लागू हुए बिना कोई सुरक्षित PDF डाउनलोड नहीं की जाएगी।':'A PDF encryption engine is required. No protected PDF will be offered until encryption is actually applied.';o.appendChild(note);return;}
  if(t.id==='imageToPdf'){
   const box=document.createElement('div');box.className='sizebox';
   box.innerHTML=`<strong>${lang==='hi'?'Photo से PDF और Scan सेटिंग':'Photo to PDF & Scan settings'}</strong>
@@ -154,15 +156,23 @@ function buildOptions(t){const o=$('options');o.innerHTML='';const add=(id,label
  if(t.id==='scanCleanup'){const box=document.createElement('div');box.className='sizebox';box.innerHTML=`<strong>${lang==='hi'?'स्कैन साफ करने की सेटिंग':'Scan cleanup settings'}</strong><div class="field"><label for="cleanupMode">${lang==='hi'?'सफाई मोड':'Cleanup mode'}</label><select id="cleanupMode"><option value="enhance">${lang==='hi'?'कॉन्ट्रास्ट सुधारें':'Enhance contrast'}</option><option value="gray">${lang==='hi'?'ग्रेस्केल':'Grayscale'}</option><option value="bw">${lang==='hi'?'ब्लैक एंड व्हाइट':'Black & white'}</option></select></div><div class="field"><label for="cleanupThreshold">${lang==='hi'?'ब्लैक/व्हाइट सीमा':'Black/white threshold'}</label><input id="cleanupThreshold" type="number" min="80" max="230" value="170"></div>`;o.appendChild(box);}
  if(['splitPdf','deletePages'].includes(t.id))add('range',tr('range'),'text','1-1');
  if(t.id==='removeWatermark'){
-  add('range',lang==='hi'?'पेज (खाली = सभी; जैसे 1-3,5)':'Pages (blank = all; e.g. 1-3,5)','text','');
-  add('wmX',lang==='hi'?'क्षेत्र X (PDF points, बाएँ से)':'Area X (PDF points from left)','number','150',{min:'0',step:'1'});
-  add('wmY',lang==='hi'?'क्षेत्र Y (PDF points, नीचे से)':'Area Y (PDF points from bottom)','number','330',{min:'0',step:'1'});
-  add('wmW',lang==='hi'?'चौड़ाई (points)':'Width (points)','number','260',{min:'1',step:'1'});
-  add('wmH',lang==='hi'?'ऊँचाई (points)':'Height (points)','number','90',{min:'1',step:'1'});
-  const note=document.createElement('div');note.className='notice';note.style.marginTop='10px';note.innerHTML=lang==='hi'?'<strong>जरूरी सीमा:</strong> यह टूल चुने हुए क्षेत्र पर सफेद आयत रखता है। यह PDF के अंदर मौजूद टेक्स्ट/लोगो ऑब्जेक्ट को असली रूप से नहीं मिटाता और नीचे का कंटेंट भी ढक सकता है। पहले प्रीव्यू जाँचें।':'<strong>Important limitation:</strong> this tool places an opaque white rectangle over the chosen area. It does not truly delete embedded text/logo objects and may cover underlying content. Review the preview first.';o.appendChild(note);
+  add('range',lang==='hi'?'किन पेजों पर (खाली = सभी; जैसे 1-3,5)':'Pages to cover (blank = all; e.g. 1-3,5)','text','');
+  const note=document.createElement('div');note.className='notice';note.style.marginTop='10px';note.innerHTML=lang==='hi'?'<strong>कैसे इस्तेमाल करें:</strong> पहले फाइल चुनकर “फाइल प्रोसेस करें” दबाएँ। फिर खुले पेज पर माउस/उंगली से वॉटरमार्क के चारों ओर बॉक्स खींचें और “सफेद कवर लगाएँ व प्रीव्यू देखें” दबाएँ। यह चुने हुए हिस्से को ढकता है, PDF के अंदर के वॉटरमार्क ऑब्जेक्ट को असली रूप से मिटाता नहीं।':'<strong>How to use:</strong> choose the PDF and press Process files. Drag a box around the watermark on the page, then press Apply white cover & preview. This covers the area; it does not delete embedded watermark objects.';o.appendChild(note);
  }
  if(t.id==='rotatePdf'){const d=document.createElement('div');d.className='field';d.innerHTML=`<label for="rotation">${tr('rotation')}</label><select id="rotation"><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>`;o.appendChild(d);}
  if(['watermark','addTextPdf'].includes(t.id))add('text',t.id==='watermark'?tr('watermark'):tr('text'),'text',t.id==='watermark'?'SafeCompress':'');
+ if(t.id==='watermark'){
+  const box=document.createElement('div');box.className='sizebox';
+  box.innerHTML=`<strong>${lang==='hi'?'वॉटरमार्क की जगह और स्टाइल':'Watermark placement & style'}</strong>
+  <div class="field"><label for="wmPosition">${lang==='hi'?'पेज पर जगह':'Position on page'}</label><select id="wmPosition">
+  <option value="center">${lang==='hi'?'बीच में':'Center'}</option><option value="top-left">${lang==='hi'?'ऊपर बाएँ':'Top left'}</option><option value="top-center">${lang==='hi'?'ऊपर बीच में':'Top center'}</option><option value="top-right">${lang==='hi'?'ऊपर दाएँ':'Top right'}</option><option value="middle-left">${lang==='hi'?'बीच बाएँ':'Middle left'}</option><option value="middle-right">${lang==='hi'?'बीच दाएँ':'Middle right'}</option><option value="bottom-left">${lang==='hi'?'नीचे बाएँ':'Bottom left'}</option><option value="bottom-center">${lang==='hi'?'नीचे बीच में':'Bottom center'}</option><option value="bottom-right">${lang==='hi'?'नीचे दाएँ':'Bottom right'}</option></select></div>
+  <div class="field"><label for="wmOpacity">${lang==='hi'?'पारदर्शिता (0.05–1)':'Opacity (0.05–1)'}</label><input id="wmOpacity" type="number" min="0.05" max="1" step="0.05" value="0.30"></div>
+  <div class="field"><label for="wmFontSize">${lang==='hi'?'फ़ॉन्ट आकार':'Font size'}</label><input id="wmFontSize" type="number" min="8" max="120" step="1" value="22"></div>
+  <div class="field"><label for="wmAngle">${lang==='hi'?'घुमाव (डिग्री)':'Angle (degrees)'}</label><input id="wmAngle" type="number" min="-90" max="90" step="5" value="-45"></div>
+  <div class="field"><label for="wmPages">${lang==='hi'?'किन पेजों पर (खाली = सभी, जैसे 1-3,5)':'Pages (blank = all, e.g. 1-3,5)'}</label><input id="wmPages" type="text" placeholder="1-3,5"></div>
+  <p class="sizehint">${lang==='hi'?'वॉटरमार्क की जगह, पारदर्शिता, आकार, कोण और पेज चुनें।':'Choose watermark position, opacity, size, angle and pages.'}</p>`;
+  o.appendChild(box);
+ }
  if(t.id==='compressPdf'||t.id==='pdfToImages')add('scale',tr('scale'),'number','1.5',{min:'0.5',max:'3',step:'0.25'});
  if(t.id==='compressPdf')add('quality',tr('quality'),'number','0.90',{min:'0.1',max:'1',step:'0.01'});
  if(['compressPhoto','compressPdf'].includes(t.id)){const box=document.createElement('div');box.className='sizebox';box.innerHTML=`<strong>${lang==='hi'?'फाइल साइज़ कंट्रोल':'File Size Control'}</strong><div class="sizegrid"><div class="field"><label for="sizeMode">${lang==='hi'?'साइज़ का लक्ष्य':'Size goal'}</label><select id="sizeMode"><option value="decrease">${lang==='hi'?'साइज़ कम करें':'Decrease size'}</option><option value="increase">${lang==='hi'?'साइज़ बढ़ाएँ':'Increase size'}</option></select></div><div class="field"><label for="targetSize">${lang==='hi'?'लक्ष्य साइज़':'Target size'}</label><input id="targetSize" type="number" min="1" value="200"></div><div class="field"><label for="targetUnit">${lang==='hi'?'यूनिट':'Unit'}</label><select id="targetUnit"><option value="KB">KB</option><option value="MB">MB</option><option value="GB">GB</option></select></div></div><div class="sizepreset"><button type="button" class="secondary" data-size="100" data-unit="KB">100 KB</button><button type="button" class="secondary" data-size="200" data-unit="KB">200 KB</button><button type="button" class="secondary" data-size="500" data-unit="KB">500 KB</button><button type="button" class="secondary" data-size="1" data-unit="MB">1 MB</button></div><p class="sizehint">${lang==='hi'?'मौजूदा साइज़ अपने-आप दिखेगा। Smart Compression पहले क्वालिटी बचाएगा; हर लक्ष्य संभव नहीं होता।':'Current size is shown from the selected file. Smart compression prioritizes quality; exact targets may not be achievable.'}</p><div id="sizeResults" class="size-results">${lang==='hi'?'फ़ाइल चुनें, मौजूदा साइज़ यहाँ दिखेगा।':'Choose a file to see its current size here.'}</div>`;o.appendChild(box);box.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{$('targetSize').value=b.dataset.size;$('targetUnit').value=b.dataset.unit;});}
@@ -248,31 +258,42 @@ async function imageToPdf(files){
 }
 async function pdfToImages(file){const data=new Uint8Array(await file.arrayBuffer());const doc=await pdfjsLib.getDocument({data}).promise;const scale=Number($('scale')?.value||1.5);for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/png'));downloadBlob(blob,`${baseName(file.name)}_page_${n}.png`);}return null;}
 async function previewWatermarkRemoval(file){
- const src=await loadPdf(file);
- const pages=src.getPages();
- const rawRange=$('range').value.trim();
+ if(!window.pdfjsLib)throw Error(tr('noPdf'));
+ const src=await loadPdf(file),pages=src.getPages(),rawRange=$('range').value.trim();
  const selected=rawRange?parseRanges(rawRange,pages.length):pages.map((_,i)=>i);
- const x=Number($('wmX').value), y=Number($('wmY').value), w=Number($('wmW').value), h=Number($('wmH').value);
- if(![x,y,w,h].every(Number.isFinite)||x<0||y<0||w<=0||h<=0)throw Error(lang==='hi'?'क्षेत्र की स्थिति और आकार सही भरें।':'Enter valid area coordinates and size.');
- for(const i of selected){const size=pages[i].getSize();if(x+w>size.width||y+h>size.height)throw Error((lang==='hi'?'पेज ':'Page ')+(i+1)+(lang==='hi'?' पर क्षेत्र पेज के बाहर जा रहा है। X/Y/चौड़ाई/ऊँचाई कम करें।':' area is outside the page. Reduce X/Y/width/height.'));}
- selected.forEach(i=>pages[i].drawRectangle({x,y,width:w,height:h,color:rgb(1,1,1),opacity:1,borderWidth:0}));
- const bytes=await src.save();
- pendingWatermarkPdf=new Blob([bytes],{type:'application/pdf'});pendingWatermarkName=baseName(file.name)+'_watermark_covered.pdf';
- // Render the first selected page from the candidate PDF for an actual visual review.
- const pdfjs=await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
- const page=await pdfjs.getPage(selected[0]+1);const viewport=page.getViewport({scale:1.25});
- const canvas=$('wmPreviewCanvas');const ctx=canvas.getContext('2d');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+ if(!selected.length)throw Error(tr('invalidRange'));
+ const bytes=await file.arrayBuffer(),pdfjs=await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
+ const firstPageNumber=selected[0]+1,page=await pdfjs.getPage(firstPageNumber),viewport=page.getViewport({scale:1.25});
+ const canvas=$('wmPreviewCanvas'),ctx=canvas.getContext('2d');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
  await page.render({canvasContext:ctx,viewport}).promise;
- $('watermarkPreview').classList.remove('hidden');
- $('wmPreviewTitle').textContent=lang==='hi'?'डाउनलोड से पहले प्रीव्यू देखें':'Preview before download';
- $('wmPreviewNote').textContent=lang==='hi'?`पेज ${selected[0]+1} का प्रीव्यू। सफेद क्षेत्र वॉटरमार्क को ढक सकता है, लेकिन नीचे का टेक्स्ट/चित्र भी ढक सकता है। यदि परिणाम ठीक नहीं है, डाउनलोड न करें; X/Y/चौड़ाई/ऊँचाई बदलकर दोबारा प्रोसेस करें।`:`Preview of page ${selected[0]+1}. The white area may cover the watermark but can also cover text/images beneath it. If it looks wrong, do not download; adjust X/Y/width/height and process again.`;
- $('wmDownloadBtn').textContent=lang==='hi'?'प्रीव्यू वाला PDF डाउनलोड करें':'Download previewed PDF';
- $('status').textContent=lang==='hi'?`प्रीव्यू तैयार। चुने गए पेज: ${selected.map(i=>i+1).join(', ')}। डाउनलोड से पहले परिणाम जाँचें।`:`Preview ready. Selected pages: ${selected.map(i=>i+1).join(', ')}. Review before downloading.`;
- $('status').className='status ok';
+ const original=ctx.getImageData(0,0,canvas.width,canvas.height);
+ wmSelectionState={file,selected,canvas,ctx,original,rect:null,dragging:false,start:null,scale:1.25};
+ $('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;pendingWatermarkPdf=null;pendingWatermarkName='';
+ canvas.onpointerdown=e=>{if(!wmSelectionState)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;wmSelectionState.dragging=true;wmSelectionState.start={x,y};wmSelectionState.rect={x,y,w:0,h:0};canvas.setPointerCapture?.(e.pointerId);};
+ canvas.onpointermove=e=>{if(!wmSelectionState?.dragging)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height,st=wmSelectionState.start;wmSelectionState.rect={x:Math.min(st.x,x),y:Math.min(st.y,y),w:Math.abs(x-st.x),h:Math.abs(y-st.y)};ctx.putImageData(wmSelectionState.original,0,0);ctx.strokeStyle='#087fdb';ctx.lineWidth=Math.max(2,canvas.width/500);ctx.setLineDash([8,5]);ctx.strokeRect(wmSelectionState.rect.x,wmSelectionState.rect.y,wmSelectionState.rect.w,wmSelectionState.rect.h);ctx.setLineDash([]);};
+ canvas.onpointerup=()=>{if(!wmSelectionState)return;wmSelectionState.dragging=false;const r=wmSelectionState.rect;if(r&&r.w>=8&&r.h>=8){$('wmApplyBtn').disabled=false;status(lang==='hi'?'क्षेत्र चुना गया। अब सफेद कवर लगाएँ और प्रीव्यू देखें।':'Area selected. Apply the cover and review the preview.','ok')}else{$('wmApplyBtn').disabled=true;ctx.putImageData(wmSelectionState.original,0,0);status(lang==='hi'?'वॉटरमार्क के चारों ओर बड़ा बॉक्स खींचें।':'Drag a larger box around the watermark.','error')}};
+ $('watermarkPreview').classList.remove('hidden');$('wmPreviewTitle').textContent=lang==='hi'?'वॉटरमार्क का क्षेत्र चुनें':'Select the watermark area';
+ $('wmPreviewNote').textContent=lang==='hi'?`पेज ${firstPageNumber} दिख रहा है। माउस या उंगली से वॉटरमार्क के चारों ओर बॉक्स खींचें। चुने गए पेज: ${selected.map(i=>i+1).join(', ')}।`:`Showing page ${firstPageNumber}. Drag a box around the watermark. Pages to cover: ${selected.map(i=>i+1).join(', ')}.`;
+ $('wmApplyBtn').textContent=lang==='hi'?'सफेद कवर लगाएँ व प्रीव्यू देखें':'Apply white cover & preview';$('wmDownloadBtn').textContent=lang==='hi'?'कवर किया PDF डाउनलोड करें':'Download covered PDF';
+ status(lang==='hi'?'पेज पर वॉटरमार्क के चारों ओर बॉक्स खींचें।':'Drag a box around the watermark on the page.');
 }
-$('wmDownloadBtn').onclick=()=>{if(!pendingWatermarkPdf)return;downloadBlob(pendingWatermarkPdf,pendingWatermarkName);status(lang==='hi'?'प्रीव्यू वाला PDF डाउनलोड किया गया। मूल फाइल में बदलाव नहीं हुआ।':'Previewed PDF downloaded. The original file was not changed.','ok');};
-$('wmCancelBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';$('watermarkPreview').classList.add('hidden');status(lang==='hi'?'प्रीव्यू रद्द किया गया। कोई फाइल डाउनलोड नहीं हुई।':'Preview cancelled. No file was downloaded.');};
+async function applyWatermarkCover(){
+ const st=wmSelectionState;if(!st||!st.rect)throw Error(lang==='hi'?'पहले पेज पर वॉटरमार्क का क्षेत्र चुनें।':'Select a watermark area on the page first.');
+ const r=st.rect;if(r.w<8||r.h<8)throw Error(lang==='hi'?'चुना गया क्षेत्र बहुत छोटा है।':'Selected area is too small.');
+ const src=await loadPdf(st.file),pages=src.getPages(),page0=pages[st.selected[0]],size0=page0.getSize();
+ const nx=r.x/st.canvas.width,ny=r.y/st.canvas.height,nw=r.w/st.canvas.width,nh=r.h/st.canvas.height;
+ for(const i of st.selected){const p=pages[i],size=p.getSize(),x=nx*size.width,w=nw*size.width,h=nh*size.height,y=(1-ny-nh)*size.height;if(x<0||y<0||x+w>size.width+0.5||y+h>size.height+0.5)throw Error((lang==='hi'?'पेज ':'Page ')+(i+1)+(lang==='hi'?' का आकार अलग है; उस पेज के लिए अलग से कवर लगाएँ।':' has a different size; cover that page separately.'));p.drawRectangle({x,y,width:w,height:h,color:rgb(1,1,1),opacity:1,borderWidth:0});}
+ const bytes=await src.save();pendingWatermarkPdf=new Blob([bytes],{type:'application/pdf'});pendingWatermarkName=baseName(st.file.name)+'_watermark_covered.pdf';
+ const pdfjs=await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise,page=await pdfjs.getPage(st.selected[0]+1),viewport=page.getViewport({scale:1.25}),canvas=$('wmPreviewCanvas'),ctx=canvas.getContext('2d');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:ctx,viewport}).promise;
+ wmSelectionState=null;canvas.onpointerdown=canvas.onpointermove=canvas.onpointerup=null;$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=false;
+ $('wmPreviewTitle').textContent=lang==='hi'?'कवर का प्रीव्यू':'Cover preview';$('wmPreviewNote').textContent=lang==='hi'?'प्रीव्यू जाँचें। सफेद बॉक्स वॉटरमार्क के नीचे का टेक्स्ट/चित्र भी ढक सकता है। सही हो तभी डाउनलोड करें।':'Review the preview. The white box may cover text or images beneath the watermark. Download only if the result looks right.';
+ status(lang==='hi'?'कवर का प्रीव्यू तैयार है। सही हो तो डाउनलोड करें।':'Cover preview ready. Download if the result looks right.','ok');
+}
+$('wmApplyBtn').onclick=async()=>{try{ $('wmApplyBtn').disabled=true;await applyWatermarkCover();}catch(e){console.error(e);status((lang==='hi'?'कवर नहीं लग सका: ':'Could not apply cover: ')+(e.message||String(e)),'error');$('wmApplyBtn').disabled=false;}};
+$('wmDownloadBtn').onclick=()=>{if(!pendingWatermarkPdf)return;downloadBlob(pendingWatermarkPdf,pendingWatermarkName);status(lang==='hi'?'काम पूरा हुआ। आपकी फ़ाइल डाउनलोड हो गई है।':'Done. Your file has been downloaded.','ok');};
+$('wmCancelBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';wmSelectionState=null;$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;$('watermarkPreview').classList.add('hidden');status(lang==='hi'?'प्रीव्यू रद्द किया गया। कोई फाइल डाउनलोड नहीं हुई।':'Preview cancelled. No file was downloaded.');};
 async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');return}
+ if(selectedTool?.id==='protectPdf'){const a=$('protectPassword')?.value||'',b=$('protectPasswordConfirm')?.value||'';if(a.length<6){status(lang==='hi'?'कम से कम 6 अक्षर का पासवर्ड दर्ज करें।':'Enter a password with at least 6 characters.','error');return;}if(a!==b){status(lang==='hi'?'दोनों पासवर्ड एक जैसे नहीं हैं।':'Passwords do not match.','error');return;}status(lang==='hi'?'वास्तविक PDF encryption library अभी इस संस्करण में उपलब्ध नहीं है। कोई असुरक्षित PDF डाउनलोड नहीं की गई।':'A real PDF encryption library is not included in this version. No unprotected file was presented as secured.','error');return;}
  $('runBtn').disabled=true;status(tr('processing'));
  try{const t=selectedTool;let out=[];
  if(t.id==='removeWatermark'){await previewWatermarkRemoval(chosenFiles[0]);return;}
@@ -301,12 +322,33 @@ async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');
  }
  else if(t.id==='splitPdf'||t.id==='deletePages'){const f=chosenFiles[0],src=await loadPdf(f),max=src.getPageCount(),idx=parseRanges($('range').value,max);let keep;if(t.id==='splitPdf')keep=idx;else {const rem=new Set(idx);keep=src.getPageIndices().filter(i=>!rem.has(i));if(!keep.length)throw Error(tr('invalidRange'));}const dest=await PDFDocument.create();const pages=await dest.copyPages(src,keep);pages.forEach(p=>dest.addPage(p));out.push({blob:new Blob([await dest.save()],{type:'application/pdf'}),name:baseName(f.name)+(t.id==='splitPdf'?'_extracted':'_pages_removed')+'.pdf'});}
  else if(t.id==='rotatePdf'){const src=await loadPdf(chosenFiles[0]);const deg=Number($('rotation').value);src.getPages().forEach(p=>p.setRotation({type:'degrees',angle:((p.getRotation().angle+deg)%360)}));out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+'_rotated.pdf'});}
- else if(['pageNumbers','watermark','addTextPdf'].includes(t.id)){const src=await loadPdf(chosenFiles[0]);const font=await src.embedFont(StandardFonts.Helvetica);const msg=$('text')?.value||'SafeCompress';for(const [i,p] of src.getPages().entries()){const {width,height}=p.getSize();if(t.id==='pageNumbers'){p.drawText(String(i+1),{x:width-45,y:18,size:10,font,color:rgb(.25,.25,.25)});}else{const scale=2,c=document.createElement('canvas');c.width=Math.ceil(width*scale);c.height=Math.ceil(height*scale);const ctx=c.getContext('2d');ctx.scale(scale,scale);ctx.font=`${t.id==='watermark'?22:12}px ${lang==='hi'?'Noto Sans Devanagari, Mangal, sans-serif':'Arial, sans-serif'}`;ctx.fillStyle=t.id==='watermark'?'rgba(115,115,115,0.30)':'rgba(115,115,115,1)';if(t.id==='watermark'){ctx.translate(width/2,height/2);ctx.rotate(-Math.PI/4);ctx.textAlign='center';ctx.fillText(msg,0,0,Math.max(40,width*.85));}else{ctx.textAlign='left';ctx.fillText(msg,30,40,Math.max(40,width-60));}const png=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!png)throw Error(lang==='hi'?'टेक्स्ट इमेज नहीं बन सकी।':'Could not render text image.');const img=await src.embedPng(await png.arrayBuffer());p.drawImage(img,{x:0,y:0,width,height});}}out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+'_edited.pdf'});}
- else if(t.id==='pdfToImages'){await pdfToImages(chosenFiles[0]);status(tr('done'),'ok');return}
+ else if(['pageNumbers','watermark','addTextPdf'].includes(t.id)){
+  const src=await loadPdf(chosenFiles[0]),msg=$('text')?.value||'SafeCompress',pages=src.getPages();
+  const chosen=t.id==='watermark'&&$('wmPages')?.value.trim()?new Set(parseRanges($('wmPages').value,pages.length)):new Set(pages.map((_,i)=>i));
+  for(const [i,p] of pages.entries()){
+   const {width,height}=p.getSize();
+   if(t.id==='watermark'&&!chosen.has(i))continue;
+   if(t.id==='pageNumbers'){
+    const font=await src.embedFont(StandardFonts.Helvetica);p.drawText(String(i+1),{x:width-45,y:18,size:10,font,color:rgb(.25,.25,.25)});continue;
+   }
+   const scale=2,c=document.createElement('canvas');c.width=Math.max(1,Math.ceil(width*scale));c.height=Math.max(1,Math.ceil(height*scale));const ctx=c.getContext('2d');ctx.scale(scale,scale);
+   const isWm=t.id==='watermark',fontSize=Math.max(8,Math.min(120,Number($('wmFontSize')?.value||22))),opacity=Math.max(.05,Math.min(1,Number($('wmOpacity')?.value||.3))),angle=Number($('wmAngle')?.value??-45);
+   ctx.font=`${isWm?fontSize:12}px ${lang==='hi'?'Noto Sans Devanagari, Mangal, sans-serif':'Arial, sans-serif'}`;ctx.fillStyle=isWm?`rgba(115,115,115,${opacity})`:'rgba(40,40,40,1)';ctx.textBaseline='middle';
+   if(isWm){
+    const pos=$('wmPosition')?.value||'center',pad=Math.max(18,fontSize),measure=Math.min(width-pad*2,Math.max(40,ctx.measureText(msg).width));let x=width/2,y=height/2,align='center';
+    if(pos.includes('left')){x=pad;align='left'}else if(pos.includes('right')){x=width-pad;align='right'}
+    if(pos.startsWith('top'))y=pad+fontSize/2;else if(pos.startsWith('bottom'))y=height-pad-fontSize/2;
+    ctx.save();ctx.translate(x,y);ctx.rotate(angle*Math.PI/180);ctx.textAlign=align;ctx.fillText(msg,0,0,Math.max(40,measure));ctx.restore();
+   }else{ctx.textAlign='left';ctx.fillText(msg,30,40,Math.max(40,width-60));}
+   const png=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!png)throw Error(lang==='hi'?'टेक्स्ट इमेज नहीं बन सकी।':'Could not render text image.');const img=await src.embedPng(await png.arrayBuffer());p.drawImage(img,{x:0,y:0,width,height});
+  }
+  out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+(t.id==='watermark'?'_watermarked':t.id==='pageNumbers'?'_numbered':'_text_added')+'.pdf'});
+ }
+ else if(t.id==='pdfToImages'){await pdfToImages(chosenFiles[0]);status(lang==='hi'?'काम पूरा हुआ। आपकी फ़ाइलें डाउनलोड हो गई हैं।':'Done. Your files have been downloaded.','ok');return}
  else throw Error(tr('unsupported'));
  if(!out.length){status(tr('done'),'ok');return}
  out.forEach(r=>{if(r?.blob)downloadBlob(r.blob,r.name)});
- status(tr('done')+' '+out.map(r=>r.name+' ('+formatBytes(r.blob.size)+(r.inputSize?' · '+sizeReport(r.inputSize,r.blob.size):'')+')'+(r.qualityNote?'\n'+r.qualityNote:'')).join('\n'),'ok');const sr=$('sizeResults');if(sr&&out.length)sr.textContent=out.map(r=>(r.inputSize?sizeReport(r.inputSize,r.blob.size):`${r.name}: ${formatBytes(r.blob.size)}`)+(r.targetBytes?(r.targetMet?(lang==='hi'?' · लक्ष्य पूरा हुआ':' · Target met'):(lang==='hi'?' · लक्ष्य पूरा नहीं हुआ':' · Target not met')):'')+(r.qualityNote?' · '+r.qualityNote:'')).join(' | ');
+ status(lang==='hi'?'काम पूरा हुआ। आपकी फ़ाइल डाउनलोड हो गई है।':'Done. Your file has been downloaded.','ok');const sr=$('sizeResults');if(sr)sr.textContent='';
  }catch(e){console.error(e);status(tr('err')+(e.message||String(e)),'error')}
  finally{$('runBtn').disabled=!chosenFiles.length}
 }
