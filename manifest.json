@@ -1,0 +1,36 @@
+{
+  "id": "/",
+  "name": "SafeCompress — Private PDF & Photo Tools",
+  "short_name": "SafeCompress",
+  "description": "Privacy-first PDF and photo tools that process files locally in your browser.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "theme_color": "#147a4b",
+  "background_color": "#f6faf7",
+  "categories": [
+    "productivity",
+    "utilities",
+    "photo"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

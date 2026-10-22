@@ -8,7 +8,9 @@
 <title>SafeCompress — Private PDF & Photo Tools</title>
 
 <!-- SafeCompress Browser Tab Logo -->
-<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.json">
 
 <style>
 :root{--green:#147a4b;--green2:#e6f5ec;--ink:#18231d;--muted:#64736a;--line:#dce7df;--bg:#f6faf7;--card:#fff;--orange:#f2a34a}
@@ -88,8 +90,8 @@ main{max-width:1100px;margin:auto;padding:0 20px 48px}.notice{border:1px solid #
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const { PDFDocument, StandardFonts, rgb } = PDFLib;
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const { PDFDocument, StandardFonts, rgb } = window.PDFLib || {}; 
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 let lang='hi', category='home', selectedTool=null, chosenFiles=[], pendingWatermarkPdf=null, pendingWatermarkName='';
 const tools = [
  {id:'compressPdf',cat:'pdf',icon:'🗜️',en:'Compress PDF',hi:'PDF Compress करें',descEn:'Reduce PDF file size.',descHi:'PDF का साइज़ कम करें।',accept:'.pdf',multiple:false},
@@ -310,6 +312,16 @@ async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');
 $('runBtn').onclick=runTool;
 renderTools();applyLang();
 })();
+</script>
+
+<script>
+// SafeCompress PWA: service workers require HTTPS or localhost.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .catch(error => console.warn('SafeCompress offline setup unavailable:', error));
+  });
+}
 </script>
 </body>
 </html>
