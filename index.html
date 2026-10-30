@@ -222,7 +222,7 @@ async function renderScanPreview(){
  try{
   const bmp=await createImageBitmap(chosenFiles[0]),original=document.createElement('canvas');original.width=bmp.width;original.height=bmp.height;original.getContext('2d').drawImage(bmp,0,0);bmp.close();
   let corners=null,detected=false;
-  try{const r=await detectAndCorrectDocument(original);corners=r.corners||null;detected=!!r.detected;}catch(e){console.warn('Scan preview edge detection:',e);}
+  if($('imagePdfAutoCrop')?.checked!==false){try{const r=await detectAndCorrectDocument(original);corners=r.corners||null;detected=!!r.detected;}catch(e){console.warn('Scan preview edge detection:',e);}}
   const display=document.createElement('canvas');display.width=original.width;display.height=original.height;display.getContext('2d').drawImage(original,0,0);
   applyScanLook(display,$('imagePdfScan')?.value||'contrast',Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));
   const maxW=1100,scale=Math.min(1,maxW/display.width);canvas.width=Math.round(display.width*scale);canvas.height=Math.round(display.height*scale);
@@ -238,9 +238,10 @@ async function renderScanPreview(){
  }catch(e){note.textContent=(lang==='hi'?'प्रीव्यू नहीं दिख सका: ':'Preview unavailable: ')+(e.message||e);}
 }
 function bindScanControls(){
- $('imagePdfScan')?.addEventListener('change',renderScanPreview);
+ const scan=$('imagePdfScan');if(scan)scan.onchange=renderScanPreview;
+ const crop=$('imagePdfAutoCrop');if(crop)crop.onchange=renderScanPreview;
  const pairs=[['imagePdfContrast','imagePdfContrastValue',v=>v+'%'],['imagePdfBrightness','imagePdfBrightnessValue',v=>v],['imagePdfThreshold','imagePdfThresholdValue',v=>v]];
- pairs.forEach(([id,out,fmt])=>{const el=$(id),label=$(out);if(el&&label)el.addEventListener('input',()=>{label.textContent=fmt(el.value);renderScanPreview();});});
+ pairs.forEach(([id,out,fmt])=>{const el=$(id),label=$(out);if(el)el.oninput=()=>{if(label)label.textContent=fmt(el.value);renderScanPreview();};});
 }
 function formatBytes(n){if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';if(n<1073741824)return (n/1048576).toFixed(2)+' MB';return (n/1073741824).toFixed(2)+' GB'}
 function targetBytes(){const n=Number($('targetSize')?.value||0);return n*1024}
@@ -290,16 +291,21 @@ async function processImage(file,t){const bmp=await createImageBitmap(file);let 
      }
      const finalBlob=bestUnder||smallestOver;
      if(!finalBlob)throw Error(lang==='hi'?'फोटो Compress नहीं हो सकी।':'Could not compress this photo.');
-     result={blob:finalBlob,name:baseName(file.name)+'_compressed.jpg',inputSize:file.size,
-       targetBytes:goal,targetMet:finalBlob.size<=goal,
-       qualityNote:finalBlob.size<=goal
-        ?(lang==='hi'?'फोटो JPEG में बनाई गई है। पारदर्शी हिस्सा सफेद हो सकता है।':'Photo was saved as JPEG; transparent areas may become white.')
-        :(lang==='hi'?'बहुत कम क्वालिटी और रिज़ॉल्यूशन पर भी लक्ष्य नहीं मिला; सबसे छोटी उपलब्ध फाइल दी गई है।':'Target could not be reached even at very low quality and resolution; smallest available file returned.')};
+     if(finalBlob.size>=file.size){
+       result={blob:file,name:file.name,inputSize:file.size,targetBytes:goal,targetMet:file.size<=goal,
+         qualityNote:lang==='hi'?'लक्ष्य नहीं मिला और नया परिणाम मूल फोटो से छोटा नहीं था; मूल फोटो सुरक्षित रखी गई।':'Target was not reached and the encoded result was not smaller; original photo preserved.'};
+     }else{
+       result={blob:finalBlob,name:baseName(file.name)+'_compressed.jpg',inputSize:file.size,
+         targetBytes:goal,targetMet:finalBlob.size<=goal,
+         qualityNote:finalBlob.size<=goal
+          ?(lang==='hi'?'फोटो JPEG में बनाई गई है। पारदर्शी हिस्सा सफेद हो सकता है।':'Photo was saved as JPEG; transparent areas may become white.')
+          :(lang==='hi'?'लक्ष्य नहीं मिला; मूल से छोटी उपलब्ध फाइल दी गई है।':'Target not reached; smallest result smaller than original returned.')};
+     }
    }
  }else result=await canvasOutput(c,file,t);
  bmp.close();return result}
 function blobFromCanvas(c,fmt,q){return new Promise(resolve=>c.toBlob(resolve,fmt,q))}
-function canvasOutput(c,file,t){const fmt=$('format')?.value||'image/jpeg';const q=Math.max(.1,Math.min(1,Number($('quality')?.value||.75)));return new Promise(resolve=>c.toBlob(blob=>resolve(blob?{blob,name:baseName(file.name)+(t.id==='cropPhoto'?'_crop':'_optimized')+'.'+(fmt==='image/png'?'png':fmt==='image/webp'?'webp':'jpg'),inputSize:t.id==='compressPhoto'?file.size:undefined}:null),fmt,q))}
+function canvasOutput(c,file,t){const fmt=$('format')?.value||'image/jpeg';const rawQ=Number($('quality')?.value||.75),q=Math.max(.1,Math.min(1,Number.isFinite(rawQ)?rawQ:.75));return new Promise((resolve,reject)=>c.toBlob(blob=>{if(!blob){reject(Error(lang==='hi'?'इमेज आउटपुट नहीं बन सका। चुना गया फॉर्मेट समर्थित नहीं हो सकता।':'Could not encode image output. The selected format may not be supported.'));return;}resolve({blob,name:baseName(file.name)+(t.id==='cropPhoto'?'_crop':'_optimized')+'.'+(fmt==='image/png'?'png':fmt==='image/webp'?'webp':'jpg'),inputSize:t.id==='compressPhoto'?file.size:undefined});},fmt,q))}
 function trimCanvasBorders(source){
  const w=source.width,h=source.height;if(w<8||h<8)return source;
  const ctx=source.getContext('2d',{willReadFrequently:true}),data=ctx.getImageData(0,0,w,h).data;
@@ -357,10 +363,10 @@ function applyScanLook(canvas,mode,contrast=1.35,brightness=5,threshold=172){
 
 async function imageToPdf(files){
  const pdf=await PDFDocument.create(),pageMode=$('imagePdfPage')?.value||'a4',scanMode=$('imagePdfScan')?.value||'auto',autoCrop=$('imagePdfAutoCrop')?.checked!==false;
- for(let index=0;index<files.length;index++){const f=files[index];let bmp;try{bmp=await createImageBitmap(f);}catch(e){throw Error((lang==='hi'?'यह फोटो फॉर्मेट पढ़ा नहीं जा सका: ':'Could not read image format: ')+f.name);}const original=document.createElement('canvas');original.width=bmp.width;original.height=bmp.height;original.getContext('2d').drawImage(bmp,0,0);bmp.close();status(lang==='hi'?`फोटो ${index+1}/${files.length}: कागज़ के किनारे और कोने पहचानकर स्कैन किया जा रहा है…`:`Photo ${index+1}/${files.length}: detecting page edges and scanning…`);let prepared=original,detected=false,scanFallback=false;try{const corrected=await detectAndCorrectDocument(original);prepared=corrected.canvas;detected=corrected.detected;}catch(err){scanFallback=true;console.warn('Auto document edge detection unavailable; using safe image cleanup:',err);}if(!detected&&autoCrop)prepared=trimCanvasBorders(prepared);prepared=applyScanLook(prepared,scanMode,Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));if(scanFallback)status(lang==='hi'?'ऑटो एज डिटेक्शन उपलब्ध नहीं हुआ; फोटो को सुरक्षित ऑटो-क्लीनअप के साथ PDF में जोड़ा जा रहा है।':'Auto edge detection unavailable; using safe automatic cleanup for this page.');const blob=await new Promise(resolve=>prepared.toBlob(resolve,'image/jpeg',.94));if(!blob)throw Error(lang==='hi'?'फोटो प्रोसेस नहीं हो सकी।':'Could not process image.');const img=await pdf.embedJpg(await blob.arrayBuffer());if(pageMode==='original'){const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}else{const pw=595.28,ph=841.89,margin=24,scale=Math.min((pw-margin*2)/img.width,(ph-margin*2)/img.height),dw=img.width*scale,dh=img.height*scale;const page=pdf.addPage([pw,ph]);page.drawImage(img,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh});}}
+ for(let index=0;index<files.length;index++){const f=files[index];let bmp;try{bmp=await createImageBitmap(f);}catch(e){throw Error((lang==='hi'?'यह फोटो फॉर्मेट पढ़ा नहीं जा सका: ':'Could not read image format: ')+f.name);}const original=document.createElement('canvas');original.width=bmp.width;original.height=bmp.height;original.getContext('2d').drawImage(bmp,0,0);bmp.close();status(lang==='hi'?`फोटो ${index+1}/${files.length}: कागज़ के किनारे और कोने पहचानकर स्कैन किया जा रहा है…`:`Photo ${index+1}/${files.length}: detecting page edges and scanning…`);let prepared=original,detected=false,scanFallback=false;if(autoCrop){try{const corrected=await detectAndCorrectDocument(original);prepared=corrected.canvas;detected=corrected.detected;}catch(err){scanFallback=true;console.warn('Auto document edge detection unavailable; using safe image cleanup:',err);}if(!detected)prepared=trimCanvasBorders(prepared);}prepared=applyScanLook(prepared,scanMode,Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));if(scanFallback)status(lang==='hi'?'ऑटो एज डिटेक्शन उपलब्ध नहीं हुआ; फोटो को सुरक्षित ऑटो-क्लीनअप के साथ PDF में जोड़ा जा रहा है।':'Auto edge detection unavailable; using safe automatic cleanup for this page.');const blob=await new Promise(resolve=>prepared.toBlob(resolve,'image/jpeg',.94));if(!blob)throw Error(lang==='hi'?'फोटो प्रोसेस नहीं हो सकी।':'Could not process image.');const img=await pdf.embedJpg(await blob.arrayBuffer());if(pageMode==='original'){const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}else{const pw=595.28,ph=841.89,margin=24,scale=Math.min((pw-margin*2)/img.width,(ph-margin*2)/img.height),dw=img.width*scale,dh=img.height*scale;const page=pdf.addPage([pw,ph]);page.drawImage(img,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh});}}
  return new Blob([await pdf.save()],{type:'application/pdf'});
 }
-async function pdfToImages(file){const data=new Uint8Array(await file.arrayBuffer()).slice();const doc=await pdfjsLib.getDocument({data}).promise;const scale=Number($('scale')?.value||1.5);for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/png'));downloadBlob(blob,`${baseName(file.name)}_page_${n}.png`);}return null;}
+async function pdfToImages(file){if(!window.pdfjsLib)throw Error(tr('noPdf'));const data=new Uint8Array(await file.arrayBuffer()).slice();const doc=await pdfjsLib.getDocument({data}).promise;const rawScale=Number($('scale')?.value||1.5),scale=Math.max(.5,Math.min(3,Number.isFinite(rawScale)?rawScale:1.5));for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/png'));downloadBlob(blob,`${baseName(file.name)}_page_${n}.png`);}return null;}
 async function previewWatermarkRemoval(file){
  if(!window.pdfjsLib)throw Error(tr('noPdf'));
  const src=await loadPdf(file),pages=src.getPages(),rawRange=$('range').value.trim();
@@ -396,7 +402,7 @@ async function applyWatermarkCover(){
 $('wmApplyBtn').onclick=async()=>{try{ $('wmApplyBtn').disabled=true;await applyWatermarkCover();}catch(e){console.error(e);status((lang==='hi'?'कवर नहीं लग सका: ':'Could not apply cover: ')+(e.message||String(e)),'error');$('wmApplyBtn').disabled=false;}};
 $('wmDownloadBtn').onclick=()=>{if(!pendingWatermarkPdf)return;downloadBlob(pendingWatermarkPdf,pendingWatermarkName);status(lang==='hi'?'काम पूरा हुआ।':'Done.','ok');};
 $('wmCancelBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';wmSelectionState=null;$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;$('watermarkPreview').classList.add('hidden');status(lang==='hi'?'प्रीव्यू रद्द किया गया। कोई फाइल डाउनलोड नहीं हुई।':'Preview cancelled. No file was downloaded.');};
-async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');return}if(['compressPdf','compressPhoto'].includes(selectedTool?.id)){const n=Number($('targetSize')?.value||0);if(!Number.isFinite(n)||n<1){status(lang==='hi'?'कम से कम 1 KB का सही लक्ष्य लिखें।':'Enter a valid target size of at least 1 KB.','error');return;}}
+async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');return}if(['compressPdf','mergePdf','splitPdf','rotatePdf','deletePages','pageNumbers','watermark','removeWatermark','addTextPdf','protectPdf'].includes(selectedTool?.id)&&!window.PDFLib){status(tr('noPdf'),'error');return}if(['compressPdf','compressPhoto'].includes(selectedTool?.id)){const n=Number($('targetSize')?.value||0);if(!Number.isFinite(n)||n<1){status(lang==='hi'?'कम से कम 1 KB का सही लक्ष्य लिखें।':'Enter a valid target size of at least 1 KB.','error');return;}}
  if(selectedTool?.id==='protectPdf'){const a=$('protectPassword')?.value||'',b=$('protectPasswordConfirm')?.value||'';if(a.length<8){status(lang==='hi'?'कम से कम 8 अक्षर का पासवर्ड दर्ज करें।':'Enter a password with at least 8 characters.','error');return;}if(a!==b){status(lang==='hi'?'दोनों पासवर्ड एक जैसे नहीं हैं।':'Passwords do not match.','error');return;}}
  $('runBtn').disabled=true;status(tr('processing'));
  try{const t=selectedTool;let out=[];
@@ -478,7 +484,20 @@ else if(t.id==='compressPdf'){
       }
     }
 
-    if (nativeBlob && nativeBlob.size <= goal &&
+    if (f.size <= goal) {
+      best = {
+        blob: new Blob([originalBytes], { type: 'application/pdf' }),
+        name: baseName(f.name) + '_original.pdf',
+        inputSize: f.size,
+        targetBytes: goal,
+        targetMet: true,
+        qualityNote: lang === 'hi'
+          ? 'मूल PDF पहले से लक्ष्य साइज़ के भीतर है; गुणवत्ता और टेक्स्ट सुरक्षित रखने के लिए वही रखी गई।'
+          : 'Original PDF already meets the target; kept unchanged to preserve quality and text.'
+      };
+    }
+
+    if (!best && nativeBlob && nativeBlob.size <= goal &&
         nativeBlob.size < f.size) {
       best = {
         blob: nativeBlob,
@@ -672,6 +691,18 @@ else if(t.id==='compressPdf'){
       };
     }
 
+    if (best.blob.size > f.size) {
+      best = {
+        blob: new Blob([originalBytes], { type: 'application/pdf' }),
+        name: baseName(f.name) + '_original.pdf',
+        inputSize: f.size,
+        targetBytes: goal,
+        targetMet: f.size <= goal,
+        qualityNote: lang === 'hi'
+          ? 'कंप्रेशन से फाइल बड़ी हो रही थी, इसलिए मूल PDF सुरक्षित रखी गई।'
+          : 'Compression would have enlarged the file, so the original PDF was preserved.'
+      };
+    }
     out.push(best);
   }
 }
@@ -679,13 +710,13 @@ else if(t.id==='compressPdf'){
  else if(t.id==='splitPdf'||t.id==='deletePages'){const f=chosenFiles[0],src=await loadPdf(f),max=src.getPageCount(),idx=parseRanges($('range').value,max);let keep;if(t.id==='splitPdf')keep=idx;else {const rem=new Set(idx);keep=src.getPageIndices().filter(i=>!rem.has(i));if(!keep.length)throw Error(tr('invalidRange'));}const dest=await PDFDocument.create();const pages=await dest.copyPages(src,keep);pages.forEach(p=>dest.addPage(p));out.push({blob:new Blob([await dest.save()],{type:'application/pdf'}),name:baseName(f.name)+(t.id==='splitPdf'?'_extracted':'_pages_removed')+'.pdf'});}
  else if(t.id==='rotatePdf'){const src=await loadPdf(chosenFiles[0]);const deg=Number($('rotation').value);src.getPages().forEach(p=>p.setRotation({type:'degrees',angle:((p.getRotation().angle+deg)%360)}));out.push({blob:new Blob([await src.save()],{type:'application/pdf'}),name:baseName(chosenFiles[0].name)+'_rotated.pdf'});}
  else if(['pageNumbers','watermark','addTextPdf'].includes(t.id)){
-  const src=await loadPdf(chosenFiles[0]),msg=$('text')?.value||'SafeCompress',pages=src.getPages();
+  const src=await loadPdf(chosenFiles[0]),msg=$('text')?.value||'SafeCompress',pages=src.getPages();const pageNumberFont=t.id==='pageNumbers'?await src.embedFont(StandardFonts.Helvetica):null;
   const chosen=t.id==='watermark'&&$('wmPages')?.value.trim()?new Set(parseRanges($('wmPages').value,pages.length)):new Set(pages.map((_,i)=>i));
   for(const [i,p] of pages.entries()){
    const {width,height}=p.getSize();
    if(t.id==='watermark'&&!chosen.has(i))continue;
    if(t.id==='pageNumbers'){
-    const font=await src.embedFont(StandardFonts.Helvetica);p.drawText(String(i+1),{x:width-45,y:18,size:10,font,color:rgb(.25,.25,.25)});continue;
+    p.drawText(String(i+1),{x:width-45,y:18,size:10,font:pageNumberFont,color:rgb(.25,.25,.25)});continue;
    }
    const scale=2,c=document.createElement('canvas');c.width=Math.max(1,Math.ceil(width*scale));c.height=Math.max(1,Math.ceil(height*scale));const ctx=c.getContext('2d');ctx.scale(scale,scale);
    const isWm=t.id==='watermark',fontSize=Math.max(8,Math.min(120,Number($('wmFontSize')?.value||22))),opacity=Math.max(.05,Math.min(1,Number($('wmOpacity')?.value||.3))),angle=Number($('wmAngle')?.value??-45);
