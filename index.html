@@ -51,7 +51,7 @@ main{max-width:1100px;margin:auto;padding:0 20px 48px}.notice{border:1px solid #
       </div>
       <div id="workView" class="hidden">
         <div class="row" style="justify-content:space-between"><div><h2 id="workTitle">Compress Photo</h2><p class="sub" id="workSub">Choose files and adjust settings.</p></div><button class="secondary" id="backBtn">← Back</button></div>
-        <div class="drop" id="dropZone"><strong id="dropTitle">Choose files</strong><p id="dropDesc">Or drag and drop them here. Files stay in this browser.</p><input type="file" id="fileInput" multiple></div>
+        <div class="drop" id="dropZone"><strong id="dropTitle">Choose files</strong><p id="dropDesc">Or drag and drop them here. Files stay in this browser.</p><input type="file" id="fileInput" accept=".pdf,application/pdf,image/*"></div>
 
         <div id="fileList" class="filelist"></div>
         <div id="options"></div>
@@ -88,12 +88,12 @@ let lang='hi', category='home', selectedTool=null, chosenFiles=[], pendingWaterm
 const tools = [
   {id:'compressPdf',cat:'pdf',icon:'🗜️',en:'Compress',hi:'Compress करें',
    descEn:'Compress one PDF or photo to your chosen KB size.',
-   descHi:'PDF या फोटो को आपके चुने हुए KB साइज़ में Compress करें।',
-   accept:'.pdf,application/pdf,image/*',multiple:false}
+   descHi:'एक PDF या फोटो को चुने हुए KB साइज़ में Compress करें।',
+   accept:'.pdf,application/pdf,.jpg,.jpeg,.png,.webp,.bmp,.gif,.avif,.tif,.tiff,image/*',multiple:false}
 ];
 const text = {
- en:{privacyMini:'Files stay on your device',badge:'LOCAL PROCESSING · NO FILE UPLOADS',heroTitle:'Compress PDF, Compress Photo और Photo से PDF',heroDesc:'PDF और फोटो का साइज़ कम करें, कई फोटो से स्कैन जैसी PDF बनाएँ। जहाँ समर्थित हो, फाइलें आपके डिवाइस पर प्रोसेस होती हैं।',notice:'<strong>Privacy by design:</strong> file processing happens in this browser tab. This starter app does not include file-upload endpoints, accounts, analytics or advertising. Some processing libraries are loaded from a CDN; for a stricter production setup, host audited library files yourself.',all:'🗜️ Compress',pdf:'📄 PDF tools',photo:'🖼️ Photo tools',scan:'📷 Scan tools',editor:'✍️ Manual editor',privacy:'🔐 Privacy & help',toolsTitle:'Compress your file',toolsSub:'PDF या फोटो चुनें और लक्ष्य साइज़ KB में लिखें।',choose:'PDF या Photo चुनें',drop:'PDF या फोटो यहाँ चुनें। फाइल आपके डिवाइस पर ही रहेगी।',run:'Compress करें',clear:'Clear selection',back:'← Back',ready:'Ready.',privacyTitle:'Privacy & help',privacyText:'SafeCompress is designed to process files locally.',whatLocalTitle:'What “local processing” means',whatLocal:'Your chosen file is read by this page and processed in browser memory. This starter code does not send the file to a SafeCompress server.',limitsTitle:'Important limitations',limitsText:'Do not use this prototype for confidential documents until you have reviewed the source, tested network traffic and hosted trusted dependencies yourself. A website cannot guarantee privacy solely by using privacy wording.',contactTitle:'Support',contactText:'Add a real contact method before publishing. Do not publish a fake address or claim certifications you do not have.',footer:'Local processing prototype',processing:'Processing locally…',done:'Done. Download your result below.',needFile:'Please choose at least one file.',unsupported:'This tool is not implemented in this starter yet. No file was uploaded.',err:'Could not process this file: ',download:'Download',options:'Options',quality:'Quality (0.1–1)',width:'Width (px; 0 = original)',height:'Height (px; 0 = original)',format:'Output format',range:'Page numbers / ranges (e.g. 1-3,5)',rotation:'Rotation',text:'Text to add',watermark:'Watermark text',scale:'PDF render scale',qualityNote:'Lower quality or dimensions usually reduce file size. Results depend on the source file.',filesSelected:'file(s) selected',invalidRange:'Page range is invalid or removes every page.',rendering:'Rendering pages locally…',noPdf:'PDF library is unavailable. Check your internet connection or CDN settings.',pageCount:'PDF pages',page:'Page',original:'Original size',output:'Output size',reduction:'Size change',notSmaller:'Output may be larger than the original, depending on the content.'},
- hi:{privacyMini:'फाइलें आपके डिवाइस पर रहती हैं',badge:'लोकल प्रोसेसिंग · फाइल अपलोड नहीं',heroTitle:'आपकी फाइलें। आपका डिवाइस। आपकी प्राइवेसी।',heroDesc:'ब्राउज़र में PDF और फोटो Compress, Convert और व्यवस्थित करें। चुनी हुई फाइल हमारे सर्वर पर नहीं भेजी जाती।',notice:'<strong>🔒 आपके दस्तावेज़ सुरक्षित हैं</strong><br>आप यहाँ अपनी PDF और फोटो का साइज़ कम कर सकते हैं और दस्तावेज़ स्कैन कर सकते हैं। आपकी फ़ाइलें सीधे आपके मोबाइल या कंप्यूटर के ब्राउज़र में प्रोसेस होती हैं। फ़ाइलें हमारे सर्वर पर अपलोड नहीं की जातीं।<br><br>आजकल कुछ वेबसाइटों पर फ़ाइलें अपलोड करने से उनमें मौजूद निजी जानकारी दूसरे सर्वर तक पहुँच सकती है। इसलिए अपनी निजी फ़ाइलों के लिए वेबसाइट चुनते समय सावधानी बरतें। SafeCompress का इस्तेमाल करें और अपनी निजता का ध्यान रखें। यह वेबसाइट पसंद आए तो इसे अपने दोस्तों, परिवार और अन्य लोगों के साथ साझा करें, ताकि वे भी जागरूक रहें।',all:'🏠 सभी टूल', pdf:'📄 PDF टूल',photo:'🖼️ फोटो टूल',scan:'📷 स्कैन टूल',editor:'✍️ मैनुअल एडिटर',privacy:'🔐 प्राइवेसी व मदद',toolsTitle:'टूल चुनें',toolsSub:'शुरू करने के लिए टूल चुनें। जहाँ संभव है, प्रोसेसिंग डिवाइस पर होती है।',choose:'फाइल चुनें',drop:'या फाइल यहाँ खींचकर छोड़ें। फाइलें इसी ब्राउज़र में रहेंगी।',run:'फाइल प्रोसेस करें',clear:'चयन हटाएँ',back:'← वापस',ready:'तैयार।',privacyTitle:'प्राइवेसी व मदद',privacyText:'SafeCompress फाइलों को स्थानीय रूप से प्रोसेस करने के लिए बनाया गया है।',whatLocalTitle:'लोकल प्रोसेसिंग का अर्थ',whatLocal:'इस पेज द्वारा चुनी गई फाइल ब्राउज़र मेमोरी में प्रोसेस होती है। यह शुरुआती कोड फाइल SafeCompress सर्वर पर नहीं भेजता।',limitsTitle:'जरूरी सीमाएँ',limitsText:'गोपनीय दस्तावेज़ों के लिए इस प्रोटोटाइप का उपयोग करने से पहले सोर्स कोड देखें, नेटवर्क ट्रैफिक जाँचें और विश्वसनीय लाइब्रेरी खुद होस्ट करें। केवल प्राइवेसी का दावा करने से सुरक्षा साबित नहीं होती।',contactTitle:'सहायता',contactText:'प्रकाशित करने से पहले असली संपर्क तरीका जोड़ें। नकली पता या अप्रमाणित प्रमाणपत्र का दावा न करें।',footer:'लोकल प्रोसेसिंग प्रोटोटाइप',processing:'डिवाइस पर प्रोसेस हो रहा है…',done:'पूरा हुआ। नीचे से फाइल डाउनलोड करें।',needFile:'कृपया कम से कम एक फाइल चुनें।',unsupported:'यह टूल अभी इस शुरुआती संस्करण में तैयार नहीं है। कोई फाइल अपलोड नहीं हुई।',err:'फाइल प्रोसेस नहीं हो सकी: ',download:'डाउनलोड',options:'विकल्प',quality:'गुणवत्ता (0.1–1)',width:'चौड़ाई (px; 0 = मूल)',height:'ऊँचाई (px; 0 = मूल)',format:'आउटपुट फॉर्मेट',range:'पेज नंबर / रेंज (जैसे 1-3,5)',rotation:'घुमाव',text:'जोड़ने वाला टेक्स्ट',watermark:'वॉटरमार्क टेक्स्ट',scale:'PDF रेंडर स्केल',qualityNote:'कम गुणवत्ता या छोटे आयाम से फाइल छोटी हो सकती है। परिणाम मूल फाइल पर निर्भर है।',filesSelected:'फाइलें चुनी गईं',invalidRange:'पेज रेंज गलत है या सभी पेज हट रहे हैं।',rendering:'पेज डिवाइस पर प्रोसेस हो रहे हैं…',noPdf:'PDF लाइब्रेरी उपलब्ध नहीं है। इंटरनेट या CDN सेटिंग जाँचें।',pageCount:'PDF पेज',page:'पेज',original:'मूल आकार',output:'आउटपुट आकार',reduction:'आकार में बदलाव',notSmaller:'कंटेंट के अनुसार आउटपुट मूल से बड़ा भी हो सकता है.'}
+ en:{privacyMini:'Files stay on your device',badge:'LOCAL PROCESSING · NO FILE UPLOADS',heroTitle:'Compress PDF, Compress Photo और Photo से PDF',heroDesc:'PDF और फोटो का साइज़ कम करें, कई फोटो से स्कैन जैसी PDF बनाएँ। जहाँ समर्थित हो, फाइलें आपके डिवाइस पर प्रोसेस होती हैं।',notice:'<strong>Privacy by design:</strong> file processing happens in this browser tab. This starter app does not include file-upload endpoints, accounts, analytics or advertising. Some processing libraries are loaded from a CDN; for a stricter production setup, host audited library files yourself.',all:'🗜️ Compress',pdf:'📄 PDF tools',photo:'🖼️ Photo tools',scan:'📷 Scan tools',editor:'✍️ Manual editor',privacy:'🔐 Privacy & help',toolsTitle:'Compress your file',toolsSub:'PDF या फोटो चुनें और लक्ष्य साइज़ KB में लिखें।',choose:'PDF या Photo चुनें',drop:'PDF या फोटो यहाँ चुनें। फाइल आपके डिवाइस पर ही रहेगी।',run:'Compress करें',clear:'Clear selection',back:'← Back',ready:'Ready.',privacyTitle:'Privacy & help',privacyText:'SafeCompress is designed to process files locally.',whatLocalTitle:'What “local processing” means',whatLocal:'Your chosen file is read by this page and processed in browser memory. This starter code does not send the file to a SafeCompress server.',limitsTitle:'Important limitations',limitsText:'Do not use this prototype for confidential documents until you have reviewed the source, tested network traffic and hosted trusted dependencies yourself. A website cannot guarantee privacy solely by using privacy wording.',contactTitle:'Support',contactText:'Add a real contact method before publishing. Do not publish a fake address or claim certifications you do not have.',footer:'Local processing prototype',processing:'Processing locally…',done:'Compression complete. Download your file below.',needFile:'Please choose at least one file.',unsupported:'This tool is not implemented in this starter yet. No file was uploaded.',err:'Could not process this file: ',download:'Download',options:'Options',quality:'Quality (0.1–1)',width:'Width (px; 0 = original)',height:'Height (px; 0 = original)',format:'Output format',range:'Page numbers / ranges (e.g. 1-3,5)',rotation:'Rotation',text:'Text to add',watermark:'Watermark text',scale:'PDF render scale',qualityNote:'Lower quality or dimensions usually reduce file size. Results depend on the source file.',filesSelected:'file(s) selected',invalidRange:'Page range is invalid or removes every page.',rendering:'Rendering pages locally…',noPdf:'PDF library is unavailable. Check your internet connection or CDN settings.',pageCount:'PDF pages',page:'Page',original:'Original size',output:'Output size',reduction:'Size change',notSmaller:'Output may be larger than the original, depending on the content.'},
+ hi:{privacyMini:'फाइलें आपके डिवाइस पर रहती हैं',badge:'लोकल प्रोसेसिंग · फाइल अपलोड नहीं',heroTitle:'आपकी फाइलें। आपका डिवाइस। आपकी प्राइवेसी।',heroDesc:'PDF और फोटो को अपनी जरूरत के KB साइज़ में Compress करें। फाइलें आपके डिवाइस पर ही प्रोसेस होती हैं।',notice:'<strong>🔒 आपके दस्तावेज़ सुरक्षित हैं</strong><br>आप यहाँ अपनी PDF और फोटो का साइज़ कम कर सकते हैं और दस्तावेज़ स्कैन कर सकते हैं। आपकी फ़ाइलें सीधे आपके मोबाइल या कंप्यूटर के ब्राउज़र में प्रोसेस होती हैं। फ़ाइलें हमारे सर्वर पर अपलोड नहीं की जातीं।<br><br>आजकल कुछ वेबसाइटों पर फ़ाइलें अपलोड करने से उनमें मौजूद निजी जानकारी दूसरे सर्वर तक पहुँच सकती है। इसलिए अपनी निजी फ़ाइलों के लिए वेबसाइट चुनते समय सावधानी बरतें। SafeCompress का इस्तेमाल करें और अपनी निजता का ध्यान रखें। यह वेबसाइट पसंद आए तो इसे अपने दोस्तों, परिवार और अन्य लोगों के साथ साझा करें, ताकि वे भी जागरूक रहें।',all:'🏠 सभी टूल', pdf:'📄 PDF टूल',photo:'🖼️ फोटो टूल',scan:'📷 स्कैन टूल',editor:'✍️ मैनुअल एडिटर',privacy:'🔐 प्राइवेसी व मदद',toolsTitle:'टूल चुनें',toolsSub:'शुरू करने के लिए टूल चुनें। जहाँ संभव है, प्रोसेसिंग डिवाइस पर होती है।',choose:'फाइल चुनें',drop:'या फाइल यहाँ खींचकर छोड़ें। फाइलें इसी ब्राउज़र में रहेंगी।',run:'फाइल प्रोसेस करें',clear:'चयन हटाएँ',back:'← वापस',ready:'तैयार।',privacyTitle:'प्राइवेसी व मदद',privacyText:'SafeCompress फाइलों को स्थानीय रूप से प्रोसेस करने के लिए बनाया गया है।',whatLocalTitle:'लोकल प्रोसेसिंग का अर्थ',whatLocal:'इस पेज द्वारा चुनी गई फाइल ब्राउज़र मेमोरी में प्रोसेस होती है। यह शुरुआती कोड फाइल SafeCompress सर्वर पर नहीं भेजता।',limitsTitle:'जरूरी सीमाएँ',limitsText:'गोपनीय दस्तावेज़ों के लिए इस प्रोटोटाइप का उपयोग करने से पहले सोर्स कोड देखें, नेटवर्क ट्रैफिक जाँचें और विश्वसनीय लाइब्रेरी खुद होस्ट करें। केवल प्राइवेसी का दावा करने से सुरक्षा साबित नहीं होती।',contactTitle:'सहायता',contactText:'प्रकाशित करने से पहले असली संपर्क तरीका जोड़ें। नकली पता या अप्रमाणित प्रमाणपत्र का दावा न करें।',footer:'लोकल प्रोसेसिंग प्रोटोटाइप',processing:'डिवाइस पर प्रोसेस हो रहा है…',done:'Compress पूरा हुआ। नीचे से फाइल डाउनलोड करें।',needFile:'कृपया कम से कम एक फाइल चुनें।',unsupported:'यह टूल अभी इस शुरुआती संस्करण में तैयार नहीं है। कोई फाइल अपलोड नहीं हुई।',err:'फाइल प्रोसेस नहीं हो सकी: ',download:'डाउनलोड',options:'विकल्प',quality:'गुणवत्ता (0.1–1)',width:'चौड़ाई (px; 0 = मूल)',height:'ऊँचाई (px; 0 = मूल)',format:'आउटपुट फॉर्मेट',range:'पेज नंबर / रेंज (जैसे 1-3,5)',rotation:'घुमाव',text:'जोड़ने वाला टेक्स्ट',watermark:'वॉटरमार्क टेक्स्ट',scale:'PDF रेंडर स्केल',qualityNote:'कम गुणवत्ता या छोटे आयाम से फाइल छोटी हो सकती है। परिणाम मूल फाइल पर निर्भर है।',filesSelected:'फाइलें चुनी गईं',invalidRange:'पेज रेंज गलत है या सभी पेज हट रहे हैं।',rendering:'पेज डिवाइस पर प्रोसेस हो रहे हैं…',noPdf:'PDF लाइब्रेरी उपलब्ध नहीं है। इंटरनेट या CDN सेटिंग जाँचें।',pageCount:'PDF पेज',page:'पेज',original:'मूल आकार',output:'आउटपुट आकार',reduction:'आकार में बदलाव',notSmaller:'कंटेंट के अनुसार आउटपुट मूल से बड़ा भी हो सकता है.'}
 };
 function tr(k){return text[lang][k]||k}
 function tname(t){return lang==='hi'?t.hi:t.en}
@@ -107,14 +107,10 @@ function renderTools(){
 }
 function applyLang(){
  document.documentElement.lang=lang==='hi'?'hi':'en';$('langBtn').textContent=lang==='hi'?'English':'हिंदी';
- $('mergeUploadTitle').textContent=lang==='hi'?'दो PDF चुनें और जोड़ें':'Select two PDFs to merge';
- $('mergeFile1Label').textContent=lang==='hi'?'पहली PDF':'First PDF';
- $('mergeFile2Label').textContent=lang==='hi'?'दूसरी PDF':'Second PDF';
- $('mergeUploadHint').textContent=lang==='hi'?'दोनों PDF चुनना जरूरी है। पहले चुनी गई PDF के पेज पहले आएँगे।':'Both PDFs are required. Pages from the first PDF will come first.';
- const map={privacyMini:'privacyMini',privacyBadge:'badge',heroTitle:'heroTitle',heroDesc:'heroDesc',navHome:'all',navPdf:'pdf',navPhoto:'photo',navScan:'scan',navEditor:'editor',navPrivacy:'privacy',toolsTitle:'toolsTitle',toolsSub:'toolsSub',dropTitle:'choose',dropDesc:'drop',runBtn:'run',clearBtn:'clear',backBtn:'back',privacyTitle:'privacyTitle',privacyText:'privacyText',whatLocalTitle:'whatLocalTitle',whatLocal:'whatLocal',limitsTitle:'limitsTitle',limitsText:'limitsText',contactTitle:'contactTitle',contactText:'contactText',footerText:'footer'};
+ const map={privacyMini:'privacyMini',privacyBadge:'badge',heroTitle:'heroTitle',heroDesc:'heroDesc',navHome:'all',toolsTitle:'toolsTitle',toolsSub:'toolsSub',dropTitle:'choose',dropDesc:'drop',runBtn:'run',clearBtn:'clear',backBtn:'back',privacyTitle:'privacyTitle',privacyText:'privacyText',whatLocalTitle:'whatLocalTitle',whatLocal:'whatLocal',limitsTitle:'limitsTitle',limitsText:'limitsText',contactTitle:'contactTitle',contactText:'contactText',footerText:'footer'};
  Object.entries(map).forEach(([id,key])=>{const el=$(id);if(el){if(id==='privacyBadge'||id==='privacyMini'||id==='heroTitle'||id==='heroDesc'||id==='whatLocal'||id==='limitsText'||id==='contactText')el.textContent=tr(key);else el.innerHTML=tr(key)}});
  $('privacyNotice').innerHTML=tr('notice');$('status').textContent=tr('ready');renderTools();
- if(selectedTool){const keepFiles=[...chosenFiles];const keepTool=selectedTool;openTool(keepTool);if(keepFiles.length){chosenFiles=keepFiles;$('fileList').textContent=keepFiles.length?`${keepFiles.length} ${tr('filesSelected')}: `+keepFiles.map(f=>`${f.name} (${formatBytes(f.size)})`).join(', '):'';$('runBtn').disabled=false;const sr=$('sizeResults');if(sr)sr.textContent='';}}
+ if(selectedTool){const keepFiles=[...chosenFiles];const oldTarget=$('targetSize')?.value||'200';const keepTool=selectedTool;openTool(keepTool);const target=$('targetSize');if(target)target.value=oldTarget;if(keepFiles.length){chosenFiles=keepFiles;$('fileList').textContent=`${keepFiles[0].name} (${formatBytes(keepFiles[0].size)})`;$('runBtn').disabled=false;const sr=$('sizeResults');if(sr)sr.textContent=lang==='hi'?'लक्ष्य साइज़ दर्ज करके Compress करें।':'Enter target size and press Compress.';}}
 }
 function openTool(t){selectedTool=t;pendingWatermarkPdf=null;pendingWatermarkName='';wmSelectionState=null;$('watermarkPreview')?.classList.add('hidden');$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;chosenFiles=[];$('fileInput').value='';$('fileInput').accept=t.accept;$('fileInput').multiple=t.multiple;$('dropZone').classList.remove('hidden');$('workTitle').textContent=tname(t);$('workSub').textContent=lang==='hi'?t.descHi:t.descEn;$('homeView').classList.add('hidden');$('privacyView').classList.add('hidden');$('workView').classList.remove('hidden');$('fileList').textContent='';$('options').innerHTML='';$('status').className='status';$('status').textContent=tr('ready');$('runBtn').disabled=true;
  buildOptions(t); }
@@ -135,15 +131,7 @@ function buildOptions(t){
   o.appendChild(box);
 }
 $('fileInput').addEventListener('change',e=>setFiles([...e.target.files]));
-function updateMergeFiles(){
- const raw1=null, raw2=null;
- const bad=[raw1,raw2].filter(f=>f&&!isPdfFile(f));if(bad.length){status((lang==='hi'?'केवल PDF फाइल चुनें: ':'Select PDF files only: ')+bad.map(f=>f.name).join(', '),'error');$('runBtn').disabled=true;return;}
- const f1=raw1,f2=raw2;chosenFiles=[f1,f2].filter(Boolean);
- $('fileList').textContent=chosenFiles.length?chosenFiles.map((f,i)=>`${lang==='hi'?'PDF':'PDF'} ${i+1}: ${f.name} (${formatBytes(f.size)})`).join(' · '):'';
- $('runBtn').disabled=!(f1&&f2);
- if(f1&&f2){$('status').className='status ok';$('status').textContent=lang==='hi'?'दोनों PDF चुन ली गई हैं। अब PDF जोड़ें बटन दबाएँ।':'Both PDFs selected. Press Process files to merge them.';}
- else {$('status').className='status';$('status').textContent=lang==='hi'?'जोड़ने के लिए दोनों PDF चुनें।':'Select both PDFs to merge.';}
-}
+
 
 function isPdfFile(f){return !!f&&(/\.pdf$/i.test(f.name)||f.type==='application/pdf');}
 function isImageFile(f){return !!f&&(f.type.startsWith('image/')||/\.(jpe?g|png|webp|bmp|gif|avif|tiff?)$/i.test(f.name));}
@@ -160,7 +148,7 @@ function formatBytes(n){if(n<1024)return n+' B';if(n<1048576)return (n/1024).toF
 function targetBytes(){const n=Number($('targetSize')?.value||0);return n*1024;}
 function sizeReport(inputBytes,outputBytes){const delta=outputBytes-inputBytes,pct=inputBytes?Math.abs(delta)/inputBytes*100:0;const mode=delta<=0?(lang==='hi'?'कम':'smaller'):(lang==='hi'?'बढ़ा':'larger');return `${lang==='hi'?'मौजूदा साइज़':'Original'}: ${formatBytes(inputBytes)} · ${lang==='hi'?'आउटपुट साइज़':'Output'}: ${formatBytes(outputBytes)} · ${lang==='hi'?'बदलाव':'Change'}: ${delta===0?'0%':`${pct.toFixed(1)}% ${mode}`}`;}
 const dz=$('dropZone');dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='#eefaf2'});dz.addEventListener('dragleave',()=>dz.style.background='');dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';setFiles([...e.dataTransfer.files])});
-$('clearBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';$('watermarkPreview').classList.add('hidden');chosenFiles=[];$('fileInput').value='';$('fileList').textContent='';$('runBtn').disabled=true;$('status').textContent=tr('ready');$('status').className='status';};
+$('clearBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';$('watermarkPreview')?.classList.add('hidden');chosenFiles=[];$('fileInput').value='';$('fileList').textContent='';$('runBtn').disabled=true;$('status').textContent=tr('ready');$('status').className='status';const sr=$('sizeResults');if(sr)sr.textContent=lang==='hi'?'पहले PDF या फोटो चुनें।':'Choose a PDF or photo first.';};
 $('backBtn').onclick=()=>{selectedTool=null;renderTools();};
 document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{category=b.dataset.cat;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x===b));selectedTool=null;renderTools();});
 $('langBtn').onclick=()=>{lang=lang==='en'?'hi':'en';applyLang()};
@@ -257,38 +245,88 @@ $('wmDownloadBtn').onclick=()=>{if(!pendingWatermarkPdf)return;downloadBlob(pend
 $('wmCancelBtn').onclick=()=>{pendingWatermarkPdf=null;pendingWatermarkName='';wmSelectionState=null;$('wmApplyBtn').disabled=true;$('wmDownloadBtn').disabled=true;$('watermarkPreview').classList.add('hidden');status(lang==='hi'?'प्रीव्यू रद्द किया गया। कोई फाइल डाउनलोड नहीं हुई।':'Preview cancelled. No file was downloaded.');};
 
 async function compressPhotoToTarget(file,goal){
-  const bmp=await createImageBitmap(file);
+  // If the original is already within the requested maximum, keep it untouched.
+  if(file.size<=goal){
+    return {blob:file,name:file.name,inputSize:file.size,targetBytes:goal,targetMet:true,
+      qualityNote:lang==='hi'?'मूल फोटो पहले से लक्ष्य साइज़ के भीतर थी; गुणवत्ता बचाने के लिए वही रखी गई।':'Original photo was already within the target; kept unchanged to preserve quality.'};
+  }
+
+  let bmp;
   try{
-    let best=null;
+    bmp=await createImageBitmap(file);
+  }catch(e){
+    throw Error(lang==='hi'
+      ?'यह फोटो ब्राउज़र में नहीं खुल सकी। JPG, PNG या WebP फोटो चुनें।'
+      :'This photo could not be opened by the browser. Choose a JPG, PNG or WebP image.');
+  }
+
+  try{
     const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d');
-    // Try progressively lower dimensions and JPEG quality until the requested KB is met.
-    const scales=[1,.85,.7,.55,.4,.3,.22,.16,.12,.08,.05];
-    const qualities=[.65,.45,.30,.20,.12,.07,.04];
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw Error(lang==='hi'?'फोटो प्रोसेसिंग शुरू नहीं हो सकी।':'Could not initialize photo processing.');
+
+    // JPEG is used for predictable lossy compression. Transparent areas become white.
+    const maxEdge=10000;
+    const maxPixels=40000000;
+    const safeBaseScale=Math.min(1,maxEdge/Math.max(bmp.width,bmp.height),Math.sqrt(maxPixels/(bmp.width*bmp.height)));
+    const scales=[1,.85,.72,.60,.50,.42,.35,.29,.24,.20,.16,.13,.10,.08,.06,.045,.03,.02].map(x=>x*safeBaseScale);
+    const qualities=[.95,.85,.75,.65,.55,.45,.35,.25,.18,.12,.08,.05,.03];
+    let bestUnder=null;
+    let smallestOver=null;
+    let bestScore=-1;
+
     for(const scale of scales){
-      canvas.width=Math.max(1,Math.round(bmp.width*scale));
-      canvas.height=Math.max(1,Math.round(bmp.height*scale));
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(bmp,0,0,canvas.width,canvas.height);
-      for(const q of qualities){
-        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',q));
+      const width=Math.max(1,Math.round(bmp.width*scale));
+      const height=Math.max(1,Math.round(bmp.height*scale));
+      canvas.width=width;
+      canvas.height=height;
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,width,height);
+      ctx.drawImage(bmp,0,0,width,height);
+
+      // For each resolution, use the highest tested quality that fits.
+      for(const quality of qualities){
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
         if(!blob)continue;
-        if(!best || (blob.size<=goal && (best.size>goal || blob.size>best.size)) ||
-           (best.size>goal && blob.size<best.size)){
-          best=blob;
+
+        if(blob.size<=goal){
+          const score=scale*quality;
+          if(score>bestScore || (Math.abs(score-bestScore)<0.0001 && (!bestUnder || blob.size>bestUnder.size))){
+            bestUnder=blob;
+            bestScore=score;
+          }
+          break;
         }
-        if(blob.size<=goal && best.size<=goal)break;
+
+        if(!smallestOver || blob.size<smallestOver.size)smallestOver=blob;
       }
-      if(best && best.size<=goal)break;
+
+      // Allow the browser to release the previous canvas backing store between sizes.
+      await new Promise(resolve=>setTimeout(resolve,0));
     }
-    if(!best)throw Error(lang==='hi'?'फोटो Compress नहीं हो सकी।':'Could not compress this photo.');
-    return {blob:best,name:baseName(file.name)+'_compressed.jpg',inputSize:file.size,
-      targetBytes:goal,targetMet:best.size<=goal,
-      qualityNote:best.size<=goal?'':(lang==='hi'?'बहुत कम क्वालिटी पर भी लक्ष्य साइज़ हासिल नहीं हो सका।':'Target could not be reached even at very low quality.')};
-  } finally { bmp.close(); }
+
+    const resultBlob=bestUnder||smallestOver;
+    if(!resultBlob)throw Error(lang==='hi'?'फोटो का आउटपुट तैयार नहीं हो सका।':'Could not create a compressed photo.');
+
+    return {
+      blob:resultBlob,
+      name:baseName(file.name)+'_compressed.jpg',
+      inputSize:file.size,
+      targetBytes:goal,
+      targetMet:resultBlob.size<=goal,
+      qualityNote:resultBlob.size<=goal
+        ?(lang==='hi'?'फोटो JPEG में बनाई गई है। पारदर्शी हिस्सा सफेद हो गया है।':'Photo was saved as JPEG; transparent areas were filled with white.')
+        :(lang==='hi'?'बहुत कम रिज़ॉल्यूशन और क्वालिटी पर भी लक्ष्य साइज़ हासिल नहीं हुआ। सबसे छोटी उपलब्ध फाइल दी गई है।':'Target could not be reached even at very low resolution and quality; the smallest available file is provided.')
+    };
+  }finally{
+    bmp.close();
+  }
 }
 async function compressPdfToTarget(file,goal){
+  if(file.size<=goal){
+    return {blob:file,name:file.name,inputSize:file.size,targetBytes:goal,targetMet:true,
+      qualityNote:lang==='hi'?'मूल PDF पहले से लक्ष्य साइज़ के भीतर थी; उसे बिना बदलाव रखा गया।':'Original PDF was already within the target; kept unchanged.'};
+  }
   if(!window.pdfjsLib || !window.PDFLib)throw Error(tr('noPdf'));
   const data=new Uint8Array(await file.arrayBuffer());
   const doc=await pdfjsLib.getDocument({data}).promise;
@@ -335,7 +373,7 @@ async function runTool(){if(!chosenFiles.length){status(tr('needFile'),'error');
  try{const t=selectedTool;let out=[];
  const f=chosenFiles[0];
   const goal=targetBytes();
-  if(!Number.isFinite(goal)||goal<1024)throw Error(lang==='hi'?'कृपया कम से कम 1 KB का सही लक्ष्य लिखें।':'Enter a valid target of at least 1 KB.');
+  if(!Number.isFinite(goal)||goal<1||!Number.isInteger(Number($('targetSize')?.value)))throw Error(lang==='hi'?'कृपया 1 या उससे अधिक का सही KB लक्ष्य लिखें।':'Enter a valid whole-number KB target of at least 1.');
   if(isPdfFile(f)){
     out.push(await compressPdfToTarget(f,goal));
   }else if(isImageFile(f)){
