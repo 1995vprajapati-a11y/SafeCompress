@@ -217,28 +217,71 @@ function isImageFile(f){return !!f&&(f.type.startsWith('image/')||/\.(jpe?g|png|
 function setFiles(files){const wantsPdf=selectedTool&&['compressPdf','mergePdf','splitPdf','rotatePdf','deletePages','pdfToImages','pageNumbers','watermark','removeWatermark','addTextPdf','protectPdf'].includes(selectedTool.id);const valid=files.filter(f=>wantsPdf?isPdfFile(f):isImageFile(f));const rejected=files.filter(f=>!valid.includes(f));if(rejected.length){status((lang==='hi'?'गलत फाइल प्रकार हटाया गया: ':'Unsupported file type rejected: ')+rejected.map(f=>f.name).join(', '),'error');}chosenFiles=selectedTool?.multiple?valid:valid.slice(0,1);$('fileList').textContent=chosenFiles.length?`${chosenFiles.length} ${tr('filesSelected')}: `+chosenFiles.map(f=>`${f.name} (${formatBytes(f.size)})`).join(', '):'';$('runBtn').disabled=!chosenFiles.length;const sr=$('sizeResults');if(sr)sr.textContent='';if(selectedTool?.id==='imageToPdf'){bindScanControls();renderScanPreview();}}
 async function renderScanPreview(){
  if(selectedTool?.id!=='imageToPdf'||!chosenFiles.length)return;
- const canvas=$('scanPreviewCanvas'),note=$('scanPreviewStatus');if(!canvas||!note)return;
- note.textContent=lang==='hi'?'फोटो पढ़ी जा रही है और चारों किनारे खोजे जा रहे हैं…':'Loading photo and detecting all four edges…';
+
+ const canvas=$('scanPreviewCanvas');
+ const note=$('scanPreviewStatus');
+ if(!canvas||!note)return;
+
+ // पुराने प्रीव्यू को रद्द मानें
+ const job=(renderScanPreview.job||0)+1;
+ renderScanPreview.job=job;
+
+ note.textContent='फोटो का हल्का प्रीव्यू तैयार हो रहा है...';
+
  try{
-  const bmp=await createImageBitmap(chosenFiles[0]);
-  const previewScale=Math.min(1,1400/Math.max(bmp.width,bmp.height));
-  const original=document.createElement('canvas');original.width=Math.max(1,Math.round(bmp.width*previewScale));original.height=Math.max(1,Math.round(bmp.height*previewScale));
-  original.getContext('2d',{willReadFrequently:true}).drawImage(bmp,0,0,original.width,original.height);bmp.close();
-  let corners=null,detected=false;
-  if($('imagePdfAutoCrop')?.checked!==false){try{const r=await detectAndCorrectDocument(original);corners=r.corners||null;detected=!!r.detected;}catch(e){console.warn('Scan preview edge detection:',e);}}
-  const display=document.createElement('canvas');display.width=original.width;display.height=original.height;display.getContext('2d').drawImage(original,0,0);
-  applyScanLook(display,$('imagePdfScan')?.value||'contrast',Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));
-  const maxW=1100,scale=Math.min(1,maxW/display.width);canvas.width=Math.round(display.width*scale);canvas.height=Math.round(display.height*scale);
-  const ctx=canvas.getContext('2d');ctx.drawImage(display,0,0,canvas.width,canvas.height);
-  if(detected&&corners){
-   ctx.save();ctx.strokeStyle='#00c853';ctx.lineWidth=Math.max(3,canvas.width/250);ctx.fillStyle='rgba(0,200,83,.13)';
-   ctx.beginPath();corners.forEach((p,i)=>{const x=p.x*canvas.width/original.width,y=p.y*canvas.height/original.height;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();ctx.fill();ctx.stroke();
-   corners.forEach((p,i)=>{const x=p.x*canvas.width/original.width,y=p.y*canvas.height/original.height;ctx.beginPath();ctx.arc(x,y,Math.max(7,canvas.width/90),0,Math.PI*2);ctx.fillStyle='#00c853';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();});ctx.restore();
-   note.textContent=lang==='hi'?'चारों कोने पहचान लिए गए हैं। हरी रेखा PDF में क्रॉप होने वाली सीमा दिखाती है।':'All four corners detected. The green outline shows the crop boundary used in the PDF.';
-  }else{
-   note.textContent=lang==='hi'?'चारों कोने स्पष्ट नहीं मिले। मूल फोटो दिखाई जा रही है; इस फोटो को मैनुअल क्रॉप की जरूरत हो सकती है।':'All four corners were not clearly detected. Original photo shown; manual crop may be needed.';
+  const file=chosenFiles[0];
+  const bmp=await createImageBitmap(file);
+
+  if(job!==renderScanPreview.job){
+   bmp.close();
+   return;
   }
- }catch(e){note.textContent=(lang==='hi'?'प्रीव्यू नहीं दिख सका: ':'Preview unavailable: ')+(e.message||e);}
+
+  // Preview अधिकतम 900px
+  const maxSize=900;
+  const scale=Math.min(1,maxSize/Math.max(bmp.width,bmp.height));
+
+  const original=document.createElement('canvas');
+  original.width=Math.max(1,Math.round(bmp.width*scale));
+  original.height=Math.max(1,Math.round(bmp.height*scale));
+
+  original.getContext('2d').drawImage(
+   bmp,0,0,original.width,original.height
+  );
+  bmp.close();
+
+  let display=original;
+
+  // OpenCV नहीं चलाना है। केवल हल्का blank-border trim।
+  if($('imagePdfAutoCrop')?.checked!==false){
+   display=trimCanvasBorders(original);
+  }
+
+  if(job!==renderScanPreview.job)return;
+
+  applyScanLook(
+   display,
+   $('imagePdfScan')?.value||'contrast',
+   Number($('imagePdfContrast')?.value||135)/100,
+   Number($('imagePdfBrightness')?.value||5),
+   Number($('imagePdfThreshold')?.value||172)
+  );
+
+  const viewScale=Math.min(1,900/display.width);
+  canvas.width=Math.max(1,Math.round(display.width*viewScale));
+  canvas.height=Math.max(1,Math.round(display.height*viewScale));
+
+  canvas.getContext('2d').drawImage(
+   display,0,0,canvas.width,canvas.height
+  );
+
+  note.textContent=$('imagePdfAutoCrop')?.checked!==false
+   ?'प्रीव्यू तैयार है। खाली किनारे ऑटो-कट किए गए हैं।'
+   :'प्रीव्यू तैयार है। मूल फोटो रखी गई है।';
+
+ }catch(e){
+  note.textContent='प्रीव्यू नहीं बन सका: '+(e.message||e);
+ }
 }
 function bindScanControls(){
  const scan=$('imagePdfScan');if(scan)scan.onchange=renderScanPreview;
@@ -373,31 +416,59 @@ async function detectAndCorrectDocument(source){
   work.width=1;work.height=1;
  }
 }
-function applyScanLook(canvas,mode,contrast=1.35,brightness=5,threshold=172){
- const ctx=canvas.getContext('2d',{willReadFrequently:true}),im=ctx.getImageData(0,0,canvas.width,canvas.height),d=im.data;
- if(mode==='color')return canvas;
- if(mode==='contrast'||mode==='gray'){
-  const factor=Number(contrast)||1.35,offset=Number(brightness)||0;
-  for(let i=0;i<d.length;i+=4){
-   const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-   const v=Math.max(0,Math.min(255,(g-128)*factor+128+offset));
-   d[i]=d[i+1]=d[i+2]=v;
+function applyScanLook(
+ canvas,
+ mode,
+ contrast=1.35,
+ brightness=5,
+ threshold=172
+){
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});
+ if(!ctx)throw Error('Canvas उपलब्ध नहीं है।');
+
+ const im=ctx.getImageData(0,0,canvas.width,canvas.height);
+ const d=im.data;
+
+ const factor=Math.max(0.5,Math.min(2,Number(contrast)||1.35));
+ const offset=Math.max(-40,Math.min(40,Number(brightness)||0));
+ const cut=Math.max(50,Math.min(240,Number(threshold)||172));
+
+ for(let i=0;i<d.length;i+=4){
+
+  const gray=
+   0.299*d[i]+
+   0.587*d[i+1]+
+   0.114*d[i+2];
+
+  let value=gray;
+
+  if(mode==='color'){
+   continue;
   }
-  ctx.putImageData(im,0,0);return canvas;
+
+  if(mode==='bw'||mode==='auto'){
+   const adjusted=Math.max(
+    0,Math.min(255,(gray-128)*factor+128+offset)
+   );
+   value=adjusted>=cut?255:0;
+  }else{
+   value=Math.max(
+    0,Math.min(255,(gray-128)*factor+128+offset)
+   );
+  }
+
+  d[i]=value;
+  d[i+1]=value;
+  d[i+2]=value;
  }
- if(mode==='auto'){
-  for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2],v=Math.max(0,Math.min(255,(g-128)*(Number(contrast)||1.35)+128+(Number(brightness)||0)));d[i]=d[i+1]=d[i+2]=v;}
-  ctx.putImageData(im,0,0);
-  if(window.cv&&window.cv.Mat){let mat,gm,bin;try{mat=cv.imread(canvas);gm=new cv.Mat();bin=new cv.Mat();cv.cvtColor(mat,gm,cv.COLOR_RGBA2GRAY);let block=Math.max(15,Math.min(51,(Math.floor(Math.min(canvas.width,canvas.height)/35)|1)));cv.adaptiveThreshold(gm,bin,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,block,11);cv.imshow(canvas,bin);}finally{[mat,gm,bin].forEach(x=>{try{x?.delete()}catch(_){}});}}
-  return canvas;
- }
- for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2],v=mode==='bw'?(g>Number(threshold||172)?255:0):g;d[i]=d[i+1]=d[i+2]=v;}
- ctx.putImageData(im,0,0);return canvas;
+
+ ctx.putImageData(im,0,0);
+ return canvas;
 }
 
 async function imageToPdf(files){
  const pdf=await PDFDocument.create(),pageMode=$('imagePdfPage')?.value||'a4',scanMode=$('imagePdfScan')?.value||'auto',autoCrop=$('imagePdfAutoCrop')?.checked!==false;
- for(let index=0;index<files.length;index++){const f=files[index];let bmp;try{bmp=await createImageBitmap(f);}catch(e){throw Error((lang==='hi'?'यह फोटो फॉर्मेट पढ़ा नहीं जा सका: ':'Could not read image format: ')+f.name);}const sourceScale=Math.min(1,2400/Math.max(bmp.width,bmp.height));const original=document.createElement('canvas');original.width=Math.max(1,Math.round(bmp.width*sourceScale));original.height=Math.max(1,Math.round(bmp.height*sourceScale));original.getContext('2d',{willReadFrequently:true}).drawImage(bmp,0,0,original.width,original.height);bmp.close();status(lang==='hi'?`फोटो ${index+1}/${files.length}: कागज़ के किनारे और कोने पहचानकर स्कैन किया जा रहा है…`:`Photo ${index+1}/${files.length}: detecting page edges and scanning…`);await new Promise(resolve=>setTimeout(resolve,0));let prepared=original,detected=false,scanFallback=false;if(autoCrop){try{const corrected=await detectAndCorrectDocument(original);prepared=corrected.canvas;detected=corrected.detected;}catch(err){scanFallback=true;console.warn('Auto document edge detection unavailable; using safe image cleanup:',err);}if(!detected)prepared=trimCanvasBorders(prepared);}prepared=applyScanLook(prepared,scanMode,Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));if(scanFallback)status(lang==='hi'?'ऑटो एज डिटेक्शन उपलब्ध नहीं हुआ; फोटो को सुरक्षित ऑटो-क्लीनअप के साथ PDF में जोड़ा जा रहा है।':'Auto edge detection unavailable; using safe automatic cleanup for this page.');const blob=await new Promise(resolve=>prepared.toBlob(resolve,'image/jpeg',.94));if(!blob)throw Error(lang==='hi'?'फोटो प्रोसेस नहीं हो सकी।':'Could not process image.');const img=await pdf.embedJpg(await blob.arrayBuffer());if(pageMode==='original'){const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}else{const pw=595.28,ph=841.89,margin=24,scale=Math.min((pw-margin*2)/img.width,(ph-margin*2)/img.height),dw=img.width*scale,dh=img.height*scale;const page=pdf.addPage([pw,ph]);page.drawImage(img,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh});}}
+ for(let index=0;index<files.length;index++){const f=files[index];let bmp;try{bmp=await createImageBitmap(f);}catch(e){throw Error((lang==='hi'?'यह फोटो फॉर्मेट पढ़ा नहीं जा सका: ':'Could not read image format: ')+f.name);}const sourceScale=Math.min(1,2400/Math.max(bmp.width,bmp.height));const original=document.createElement('canvas');original.width=Math.max(1,Math.round(bmp.width*sourceScale));original.height=Math.max(1,Math.round(bmp.height*sourceScale));original.getContext('2d',{willReadFrequently:true}).drawImage(bmp,0,0,original.width,original.height);bmp.close();status(lang==='hi'?`फोटो ${index+1}/${files.length}: कागज़ के किनारे और कोने पहचानकर स्कैन किया जा रहा है…`:`Photo ${index+1}/${files.length}: detecting page edges and scanning…`);await new Promise(resolve=>setTimeout(resolve,0));let prepared=original;  if(autoCrop){  prepared=trimCanvasBorders(original); }  await new Promise(resolve=>setTimeout(resolve,0));prepared=applyScanLook(prepared,scanMode,Number($('imagePdfContrast')?.value||135)/100,Number($('imagePdfBrightness')?.value||5),Number($('imagePdfThreshold')?.value||172));const blob=await new Promise(resolve=>prepared.toBlob(resolve,'image/jpeg',.94));if(!blob)throw Error(lang==='hi'?'फोटो प्रोसेस नहीं हो सकी।':'Could not process image.');const img=await pdf.embedJpg(await blob.arrayBuffer());if(pageMode==='original'){const page=pdf.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}else{const pw=595.28,ph=841.89,margin=24,scale=Math.min((pw-margin*2)/img.width,(ph-margin*2)/img.height),dw=img.width*scale,dh=img.height*scale;const page=pdf.addPage([pw,ph]);page.drawImage(img,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh});}}
  return new Blob([await pdf.save()],{type:'application/pdf'});
 }
 async function pdfToImages(file){if(!window.pdfjsLib)throw Error(tr('noPdf'));const data=new Uint8Array(await file.arrayBuffer()).slice();const doc=await pdfjsLib.getDocument({data}).promise;const rawScale=Number($('scale')?.value||1.5),scale=Math.max(.5,Math.min(3,Number.isFinite(rawScale)?rawScale:1.5));for(let n=1;n<=doc.numPages;n++){const p=await doc.getPage(n);const vp=p.getViewport({scale});const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/png'));downloadBlob(blob,`${baseName(file.name)}_page_${n}.png`);}return null;}
