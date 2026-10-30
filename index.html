@@ -465,23 +465,25 @@ else if(t.id==='compressPdf'){
 
         const pageCount = doc.numPages;
 
-        // Balanced: try readable quality before lower resolutions.
-        let scales = [1.25, 1.0, 0.85, 0.7, 0.55];
-        let qualities = [0.78, 0.65, 0.52];
+        // Try high-detail settings first, then step down only as needed.
+        // Evaluate all practical combinations so a 500 KB target does not
+        // unnecessarily stop at (for example) a 135 KB result.
+        let scales = [2.0, 1.8, 1.6, 1.45, 1.3, 1.15, 1.0, 0.85, 0.7];
+        let qualities = [0.95, 0.92, 0.88, 0.84, 0.80, 0.76];
 
         if (qualityMode === 'quality') {
-          scales = [1.5, 1.25, 1.0, 0.85, 0.7];
-          qualities = [0.88, 0.80, 0.72];
+          scales = [2.2, 2.0, 1.8, 1.6, 1.45, 1.3, 1.15, 1.0, 0.85];
+          qualities = [0.98, 0.96, 0.93, 0.90, 0.86, 0.82];
         } else if (qualityMode === 'size') {
-          scales = [0.85, 0.7, 0.55, 0.4];
-          qualities = [0.60, 0.48, 0.36];
+          scales = [1.5, 1.3, 1.15, 1.0, 0.85, 0.7, 0.55];
+          qualities = [0.82, 0.78, 0.72, 0.66, 0.60, 0.54];
         }
 
         let closest = null;
-        let reachedTarget = false;
+        let smallestOverTarget = null;
 
-        for (const scale of scales) {
-          for (const quality of qualities) {
+        for (const quality of qualities) {
+          for (const scale of scales) {
             const pdf = await PDFDocument.create();
             let attemptFailed = false;
 
@@ -556,17 +558,16 @@ else if(t.id==='compressPdf'){
                   : 'Scanned pages were rasterized. Searchable text may not be preserved.'
               };
 
-              // Prefer the largest result that meets the target.
+              // Select the result closest to the requested size without
+              // exceeding it. Keep the smallest over-target result only as
+              // a fallback when no candidate can fit under the target.
               if (blob.size <= goal) {
                 if (!closest || blob.size > closest.blob.size) {
                   closest = candidate;
                 }
-                reachedTarget = true;
-              } else if (!reachedTarget &&
-                  (!closest ||
-                   Math.abs(blob.size - goal) <
-                   Math.abs(closest.blob.size - goal))) {
-                closest = candidate;
+              } else if (!smallestOverTarget ||
+                  blob.size < smallestOverTarget.blob.size) {
+                smallestOverTarget = candidate;
               }
             } catch (e) {
               console.warn(
@@ -578,18 +579,17 @@ else if(t.id==='compressPdf'){
               attemptFailed = true;
             }
 
-            if (reachedTarget) break;
             if (attemptFailed) {
-              // Continue with a lower-resolution attempt.
+              // Continue with the next quality/resolution combination.
               continue;
             }
           }
-
-          if (reachedTarget) break;
         }
 
         if (closest) {
           best = closest;
+        } else if (smallestOverTarget) {
+          best = smallestOverTarget;
         }
       } finally {
         if (doc) {
