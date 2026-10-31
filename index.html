@@ -521,7 +521,7 @@ else if(t.id==='compressPdf'){
   const f = chosenFiles[0];
   const originalBytes = await f.arrayBuffer();
   const goal = targetBytes();
-  const qualityMode = $('pdfQualityMode')?.value || 'balanced';
+  const qualityMode = 'balanced';
 
   let best = null;
   let nativeBlob = null;
@@ -644,28 +644,23 @@ else if(t.id==='compressPdf'){
         }).promise;
 
         const pageCount = doc.numPages;
+// Try 18 balanced combinations across different resolutions.
+let scales = [2.0, 1.6, 1.3, 1.0, 0.7, 0.45];
+let qualities = [0.95, 0.88, 0.80];
 
-        // Try high-detail settings first, then step down only as needed.
-        // Evaluate all practical combinations so a 500 KB target does not
-        // unnecessarily stop at (for example) a 135 KB result.
-        let scales = [2.0, 1.8, 1.6, 1.45, 1.3, 1.15, 1.0, 0.85, 0.7];
-        let qualities = [0.95, 0.92, 0.88, 0.84, 0.80, 0.76];
+if (qualityMode === 'quality') {
+  scales = [2.2, 1.8, 1.5, 1.2, 0.9, 0.7];
+  qualities = [0.98, 0.93, 0.88];
+} else if (qualityMode === 'size') {
+  scales = [1.5, 1.2, 1.0, 0.75, 0.5, 0.3];
+  qualities = [0.82, 0.72, 0.60];
+}
 
-        if (qualityMode === 'quality') {
-          scales = [2.2, 2.0, 1.8, 1.6, 1.45, 1.3, 1.15, 1.0, 0.85];
-          qualities = [0.98, 0.96, 0.93, 0.90, 0.86, 0.82];
-        } else if (qualityMode === 'size') {
-          scales = [1.5, 1.3, 1.15, 1.0, 0.85, 0.7, 0.55];
-          qualities = [0.82, 0.78, 0.72, 0.66, 0.60, 0.54];
-        }
+let closest = null;
+let smallestOverTarget = null;
 
-        let closest = null;
-        let smallestOverTarget = null;
-let compressionAttemptCount = 0;
-        for (const quality of qualities) {
-          if (compressionAttemptCount >= 18) break;
-compressionAttemptCount++;
-          for (const scale of scales) {
+for (const scale of scales) {
+  for (const quality of qualities) {
             const pdf = await PDFDocument.create();
             let attemptFailed = false;
 
