@@ -661,8 +661,10 @@ else if(t.id==='compressPdf'){
 
         let closest = null;
         let smallestOverTarget = null;
-
+let compressionAttemptCount = 0;
         for (const quality of qualities) {
+          if (compressionAttemptCount >= 18) break;
+compressionAttemptCount++;
           for (const scale of scales) {
             const pdf = await PDFDocument.create();
             let attemptFailed = false;
@@ -708,6 +710,7 @@ else if(t.id==='compressPdf'){
                 const image = await pdf.embedJpg(
                   await jpg.arrayBuffer()
                 );
+                page.cleanup();
 
                 const outPage = pdf.addPage([
                   baseViewport.width,
