@@ -615,23 +615,8 @@ else if(t.id==='compressPdf'){
       };
     }
 
-    if (!best && sourceHasText) {
-      const safeBlob =
-        nativeBlob && nativeBlob.size < f.size
-          ? nativeBlob
-          : new Blob([originalBytes], { type: 'application/pdf' });
-
-      best = {
-        blob: safeBlob,
-        name: baseName(f.name) + '_text_preserved.pdf',
-        inputSize: f.size,
-        targetBytes: goal,
-        targetMet: safeBlob.size <= goal,
-        qualityNote: lang === 'hi'
-          ? 'टेक्स्ट वाली PDF को इमेज में नहीं बदला गया, ताकि टेक्स्ट और फ़ॉन्ट सुरक्षित रहें।'
-          : 'Raster compression skipped to preserve selectable text.'
-      };
-    }
+ // If lossless compression is insufficient, try raster compression
+// even when the PDF contains selectable text.
 
     // Step 3: Raster compression for scanned/image-only PDFs.
     if (!best) {
